@@ -114,7 +114,7 @@ export function PrefsButton({ me, onChange }: { me: Identity; onChange: () => vo
   return (
     <>
       <button className="ghost sm me-button" onClick={() => setOpen(true)} title="Your name and preferences">
-        <Avatar id={me.id} name={me.name} size={22} /><span>{me.name}</span>
+        <Avatar id={me.id} name={me.name} size={22} /><span className="me-name">{me.name}</span>
       </button>
       {open && <PrefsModal me={me} onClose={() => setOpen(false)} onChange={onChange} />}
     </>

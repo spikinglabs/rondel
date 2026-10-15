@@ -441,6 +441,8 @@ select.sm-select { width: auto; min-height: 26px; padding: 2px 8px; font-size: 1
 /* ---------- people */
 .me-button { gap: 6px; padding-left: 4px; }
 .me-button .avatar { border: none; }
+/* Phones: the avatar alone, so a long name never pushes the top bar sideways. */
+@media (max-width: 640px) { .me-button .me-name { display: none; } }
 .here { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 .here-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 2px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; background: var(--surface); }
 .here-chip .avatar { border: none; }
