@@ -95,18 +95,23 @@ Node server: `PORT` (8787), `DATA_DIR` (`./data`), `STATIC_DIR` (`./dist`).
 
 ## Releasing (hosted lab site)
 
-Testers use https://rondel.lab.spikinglabs.com, so nothing goes there untested:
+Testers use https://rondel.lab.spikinglabs.com, so nothing goes there untested. GitHub Actions
+(`.github/workflows/ci.yml`) does the releasing:
 
-1. `npm test && npm run build && npm run test:e2e` locally.
-2. `npm run cf:staging`, then `npm run check:staging` (the staging site, https://rondel-staging.spikinglabs.workers.dev,
-   has its own meetings and a "Staging" tag). The first run right after a deploy can time out while the site updates; run it again.
-3. Only when that passes: `npm run cf:deploy`, then `npm run check:live`.
+1. Every pull request runs `npm test`, the build and `npm run test:e2e`.
+2. Every merge to `main` deploys to the staging site (https://rondel-staging.spikinglabs.workers.dev, its own
+   meetings and a "Staging" tag) and runs `npm run check:staging` against it.
+3. A version tag (`git tag v0.24.0 && git push origin v0.24.0`, matching `package.json`) does the same, then
+   deploys the lab site and runs `npm run check:live`.
+
+The workflow needs the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The same
+`npm run cf:staging` / `cf:deploy` scripts still work by hand.
 
 Costs and limits: rooms use the Durable Object hibernation API, so open but idle tabs cost nothing, and
 heartbeats are answered without waking the room. Each network address may open 300 meeting connections a
 minute (`ratelimits` in `wrangler.jsonc`). Cloudflare's budget alert on the account emails when spending passes $10.
 
-Several people (or Claude threads) commit here: commit on top of the latest HEAD and tell the others before deploying.
+Changes go in through pull requests to https://github.com/spikinglabs/rondel; nobody pushes to `main` directly.
 
 ## Development
 
