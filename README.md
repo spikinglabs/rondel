@@ -231,3 +231,10 @@ settings:
 - **Save as template:** in a meeting, Settings → Save as meeting design… turns its board, agenda and settings into YAML.
 - **For everyone in your organisation:** put YAML files next to the app and list them in `RONDEL_CONFIG.templates` in `index.html`, for example `["templates/board-meeting.yaml"]`. They appear under "From your organisation".
 - A meeting keeps a copy of its template, so "Start the next meeting" works for everyone in it, even if the template was only in one person's browser.
+
+## Licence
+
+Rondel is open source under the [Apache License 2.0](LICENSE). You may run, change and redistribute it,
+including inside your company. "Rondel" and its logo identify the version made by
+[Spiking Labs](https://spikinglabs.com): if you run a changed copy as a service for others, please give it
+your own name.
