@@ -1,0 +1,47 @@
+{
+  "name": "rondel",
+  "version": "0.23.0",
+  "private": true,
+  "description": "Retrospective and meeting tool: static app, end-to-end encrypted sync through a tiny room server (Node or Cloudflare) or peer-to-peer",
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx server/node/server.ts & vite",
+    "build": "tsc --noEmit && tsc --noEmit -p server/cloudflare/tsconfig.json && vite build",
+    "start": "node --import tsx server/node/server.ts",
+    "preview": "npm run build && npm start",
+    "cf:dev": "wrangler dev",
+    "cf:deploy": "npm run build && node scripts/site-config.mjs site/lab.json && wrangler deploy",
+    "cf:staging": "npm run build && node scripts/site-config.mjs site/staging.json && wrangler deploy --env staging",
+    "check:staging": "BASE_URL=https://rondel-staging.spikinglabs.workers.dev/ node --import tsx e2e/server.mjs",
+    "check:live": "BASE_URL=https://rondel.lab.spikinglabs.com/ node --import tsx e2e/server.mjs",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:e2e": "node e2e/smoke.mjs && node --import tsx e2e/server.mjs && node --import tsx e2e/series.mjs && node --import tsx e2e/data.mjs && node e2e/artifact.mjs && node --import tsx e2e/mobile.mjs"
+  },
+  "dependencies": {
+    "@trystero-p2p/nostr": "^0.26.0",
+    "@trystero-p2p/torrent": "^0.26.0",
+    "lib0": "^0.2.119",
+    "qrcode-generator": "^1.4.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tsx": "^4.23.15",
+    "y-indexeddb": "^9.0.12",
+    "y-protocols": "^1.0.7",
+    "yaml": "^2.9.1",
+    "yjs": "^13.6.33"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261014.1",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsqr": "^1.4.0",
+    "playwright": "^1.64.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "wrangler": "^4.151.0",
+    "ws": "^8.22.0"
+  }
+}

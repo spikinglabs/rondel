@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Rondel</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b5bdb'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='white'/%3E%3C/svg%3E" />
+    <script>
+      // Connection settings. IT can edit this block after the build without rebuilding.
+      // sync: "auto" (default) uses a Rondel server at the same address when there is one, so meetings are
+      //   stored and people can prepare at different times; otherwise browsers sync peer-to-peer.
+      //   "server" or "p2p" forces one. serverUrl: the server's address if it is somewhere else.
+      // Peer-to-peer only: strategy "nostr" or "torrent", relayUrls (own relays), turn (TURN servers), e.g.
+      //   [{ urls: "turn:turn.example.com:3478", username: "u", credential: "p" }]
+      // templates: extra meeting templates for everyone, as YAML files next to the app,
+      //   e.g. ["templates/board-meeting.yaml"]. The format is in the README.
+      // lab: true shows a "Lab" tag and says on the data page that this is a test.
+      // feedback: an email address or a form's web address for "Send feedback"; null hides the link.
+      window.RONDEL_CONFIG = window.RONDEL_CONFIG || {
+        sync: "auto",
+        serverUrl: null,
+        strategy: "nostr",
+        relayUrls: null,
+        turn: [],
+        lab: false,
+        feedback: null
+      };
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
