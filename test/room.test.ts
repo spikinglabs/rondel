@@ -107,3 +107,45 @@ test('a connection handed back after the room slept stays authenticated and keep
   assert.equal(a2.at(-1)?.t, 'ack');
   assert.deepEqual(got.at(-1), { t: 'upd', seq: 1, data: 'xyz' });
 });
+
+test('delete removes the meeting for everyone and refuses it afterwards, even from a browser that still has a copy', async () => {
+  const store = new MemoryStore();
+  const room = new Room(store);
+  const a = client(room);
+  const b = client(room);
+  await a.hello();
+  await b.hello();
+  await a.send({ t: 'upd', id: 1, data: 'secret' });
+  await b.send({ t: 'delete' });
+  assert.equal(a.last('deleted')?.t, 'deleted');
+  assert.equal(b.last('deleted')?.t, 'deleted');
+  assert.ok(a.closed && b.closed);
+  assert.deepEqual(await store.entriesSince(0), []);
+  assert.equal(await store.getAuthHash(), null);
+  const c = client(room);
+  await c.hello();
+  assert.equal(c.last('error')?.code, 'gone');
+});
+
+test('a meeting expires after the retention time without changes, but not while someone has it open', async () => {
+  const store = new MemoryStore();
+  let now = Date.UTC(2026, 0, 1);
+  store.now = () => now;
+  const room = new Room(store, 90);
+  const a = client(room);
+  await a.hello();
+  assert.equal(a.last('welcome').expiresAt, null);
+  await a.send({ t: 'upd', id: 1, data: 'x' });
+  const due = now + 90 * 86_400_000;
+  assert.equal(await room.expiresAt(), due);
+  now = due + 1;
+  assert.ok((await room.expire(now))! > now, 'kept while connected');
+  a.leave();
+  assert.equal(await room.expire(due - 1), due, 'not yet');
+  assert.equal(await room.expire(now), null);
+  assert.deepEqual(await store.entriesSince(0), []);
+  // Expiry is not a deletion: the link can be used again, e.g. by a browser that kept a copy.
+  const b = client(room);
+  await b.hello();
+  assert.equal(b.last('welcome').t, 'welcome');
+});

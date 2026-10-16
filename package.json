@@ -1,6 +1,6 @@
 {
   "name": "rondel",
-  "version": "0.23.0",
+  "version": "0.25.0",
   "private": true,
   "license": "Apache-2.0",
   "description": "Retrospective and meeting tool: static app, end-to-end encrypted sync through a tiny room server (Node or Cloudflare) or peer-to-peer",
@@ -13,10 +13,10 @@
     "cf:dev": "wrangler dev",
     "cf:deploy": "npm run build && node scripts/site-config.mjs site/lab.json && wrangler deploy",
     "cf:staging": "npm run build && node scripts/site-config.mjs site/staging.json && wrangler deploy --env staging",
-    "check:staging": "BASE_URL=https://rondel-staging.spikinglabs.workers.dev/ node --import tsx e2e/server.mjs",
-    "check:live": "BASE_URL=https://rondel.lab.spikinglabs.com/ node --import tsx e2e/server.mjs",
+    "check:staging": "export BASE_URL=https://rondel-staging.spikinglabs.workers.dev/ && node --import tsx e2e/server.mjs && node --import tsx e2e/lab.mjs",
+    "check:live": "export BASE_URL=https://rondel.lab.spikinglabs.com/ && node --import tsx e2e/server.mjs && node --import tsx e2e/lab.mjs",
     "test": "node --import tsx --test test/*.test.ts",
-    "test:e2e": "node e2e/smoke.mjs && node --import tsx e2e/server.mjs && node --import tsx e2e/series.mjs && node --import tsx e2e/data.mjs && node e2e/artifact.mjs && node --import tsx e2e/mobile.mjs"
+    "test:e2e": "node e2e/smoke.mjs && node --import tsx e2e/server.mjs && node --import tsx e2e/series.mjs && node --import tsx e2e/data.mjs && node --import tsx e2e/lab.mjs && node e2e/artifact.mjs && node --import tsx e2e/mobile.mjs"
   },
   "dependencies": {
     "@trystero-p2p/nostr": "^0.26.0",

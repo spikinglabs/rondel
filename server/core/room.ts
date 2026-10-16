@@ -12,7 +12,20 @@ export interface RoomStore {
   /** Delete entries with seq <= upTo and store `data` as the entry with seq = upTo. */
   compact(upTo: number, data: string): Promise<void>;
   stats(): Promise<{ count: number; bytes: number }>;
+  /** When an entry was last stored or compacted (ms since 1970), or null for an empty room. */
+  lastWrite(): Promise<number | null>;
+  /**
+   * Delete every entry and the auth hash. With `tombstone`, remember that the room was deleted on purpose,
+   * so browsers that still hold a copy can't upload it again; without, the room id is simply free again.
+   */
+  clear(tombstone: boolean): Promise<void>;
+  /** True after clear(true). */
+  isGone(): Promise<boolean>;
 }
+
+/** How long the server keeps a meeting after its last change, unless the adapter says otherwise. */
+export const DEFAULT_RETENTION_DAYS = 90;
+const DAY = 86_400_000;
 
 /** One open connection, as the adapter sees it. */
 export interface Conn {
@@ -31,7 +44,26 @@ export class Room {
   private conns = new Map<Conn, { authed: boolean }>();
   private queue: Promise<unknown> = Promise.resolve();
 
-  constructor(private store: RoomStore) {}
+  constructor(private store: RoomStore, private retentionDays = DEFAULT_RETENTION_DAYS) {}
+
+  /** When the room expires if nothing changes before then (ms), or null when it holds nothing. */
+  async expiresAt() {
+    const last = await this.store.lastWrite();
+    return last === null || this.retentionDays <= 0 ? null : last + this.retentionDays * DAY;
+  }
+
+  /**
+   * Called by the adapter's timer: deletes the room if it has passed its retention time and nobody is
+   * connected. Returns when to check again (ms), or null when there is nothing left to expire.
+   */
+  async expire(now = Date.now()): Promise<number | null> {
+    const at = await this.expiresAt();
+    if (at === null) return null;
+    if (this.conns.size > 0) return Math.max(at, now + DAY);
+    if (at > now) return at;
+    await this.store.clear(false);
+    return null;
+  }
 
   get size() {
     return this.conns.size;
@@ -76,6 +108,7 @@ export class Room {
     if (!state.authed) {
       if (msg.t !== 'hello') return this.fail(conn, 'bad-request', 'Say hello first');
       if (msg.v !== PROTOCOL_VERSION) return this.fail(conn, 'version', 'Please reload the page to get the latest version');
+      if (await this.store.isGone()) return this.fail(conn, 'gone', 'This meeting was deleted from the server');
       if (typeof msg.auth !== 'string' || msg.auth.length < 16) return this.fail(conn, 'bad-request', 'Missing auth');
       const hash = await sha256(msg.auth);
       const known = await this.store.getAuthHash();
@@ -85,7 +118,11 @@ export class Room {
       conn.authed?.();
       const since = Number.isFinite(msg.since) ? msg.since : 0;
       const { count } = await this.store.stats();
-      this.send(conn, { t: 'welcome', entries: await this.store.entriesSince(since), others: this.authedCount() - 1, entryCount: count });
+      const expires = await this.expiresAt();
+      this.send(conn, {
+        t: 'welcome', entries: await this.store.entriesSince(since), others: this.authedCount() - 1, entryCount: count,
+        expiresAt: expires === null ? null : new Date(expires).toISOString(), retentionDays: this.retentionDays,
+      });
       this.broadcast(conn, { t: 'peers', others: 0, joined: true }, true);
       return;
     }
@@ -109,6 +146,19 @@ export class Room {
         if (typeof msg.data !== 'string' || !Number.isInteger(msg.upTo) || msg.upTo < 1) return this.fail(conn, 'bad-request', 'Bad snapshot');
         await this.store.compact(msg.upTo, msg.data);
         return;
+      case 'delete': {
+        await this.store.clear(true);
+        for (const c of [...this.conns.keys()]) {
+          this.send(c, { t: 'deleted' });
+          this.conns.delete(c);
+          try {
+            c.close(4000, 'gone');
+          } catch {
+            /* already closed */
+          }
+        }
+        return;
+      }
       default:
         return this.fail(conn, 'bad-request', 'Unknown message');
     }

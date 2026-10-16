@@ -42,6 +42,12 @@ export interface Sync {
   /** True once the meeting's stored or shared state has been received at least once. */
   readonly loaded: boolean;
   readonly error: string | null;
+  /** The meeting was deleted from the server (by someone, at some point). Only room servers say this. */
+  readonly gone?: boolean;
+  /** When the room server deletes the meeting if nothing changes before then (ISO date). */
+  readonly expiresAt?: string | null;
+  /** Delete the meeting from the room server for everyone. Only room servers offer this. */
+  deleteFromServer?(): void;
   onChange(fn: () => void): () => void;
   destroy(): void;
 }

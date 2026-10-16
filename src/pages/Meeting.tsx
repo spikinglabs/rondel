@@ -6,7 +6,7 @@ import type { Sync } from '../lib/sync';
 import type { Ops } from '../lib/ops';
 import { minutesMarkdown } from '../lib/minutes';
 import { downloadText, exportMeeting, slug } from '../lib/files';
-import { Avatar, Modal, PrefsButton, TopBar, toast, toastError, ask, copyText } from '../components/ui';
+import { Avatar, Modal, PrefsButton, TopBar, toast, toastError, ask, copyText, fmtDate } from '../components/ui';
 import { TimerView } from '../components/Timer';
 import { QrCode } from '../components/QrCode';
 import { Board } from '../components/Board';
@@ -49,6 +49,7 @@ export function MeetingPage({ roomId, roomKey, me, onRename }: { roomId: string;
   useCommands(() => commands.current());
 
   if (state.status === 'loading') return (<><TopBar /><div className="empty">Opening…</div></>);
+  if (state.sync.gone) return <Deleted roomId={roomId} />;
   if (state.status === 'waiting') return <Waiting sync={state.sync} />;
 
   const { view, ops, doc } = state;
@@ -234,12 +235,32 @@ export function MeetingPage({ roomId, roomKey, me, onRename }: { roomId: string;
       {minutesOpen && <MinutesModal markdown={minutesMarkdown(doc, view, names)} fileName={`${slug(meta.title)}-minutes.md`} onClose={() => setMinutesOpen(false)} />}
       {shareOpen && <ShareModal link={meetingLink(roomId, roomKey)} seriesLink={series?.link} seriesOverview={series?.overview} onClose={() => setShareOpen(false)} />}
       {settingsOpen && <SettingsModal settings={meta.settings} ops={ops} peers={peers} facilitators={meta.facilitators} onClose={() => setSettingsOpen(false)}
+        sync={state.sync} canDelete={isFacilitator && !meta.series}
         onSaveAsTemplate={() => { setSettingsOpen(false); saveAsNewTemplate(); }} />}
       {templateYaml !== null && <TemplateEditor title="Save as a new template" initialYaml={templateYaml} onClose={() => setTemplateYaml(null)} onSaved={() => setTemplateYaml(null)} />}
       {nextOpen && (
         <NewMeetingModal initialTemplate={templateOf(meta)} onClose={() => setNextOpen(false)}
           onCreate={(input) => (input.repeat ? startSeries(me, input) : startMeeting(me, { ...input, seriesName: input.seriesName ?? meta.seriesName ?? meta.title, previous: view }))} />
       )}
+    </>
+  );
+}
+
+function Deleted({ roomId }: { roomId: string }) {
+  useEffect(() => {
+    void forgetMeeting(roomId);
+    return () => void setTimeout(() => forgetMeeting(roomId), 0);
+  }, [roomId]);
+  return (
+    <>
+      <TopBar />
+      <div className="page">
+        <div className="card stack" style={{ maxWidth: 560, margin: '40px auto' }}>
+          <h2>This meeting was deleted</h2>
+          <p className="muted">Someone with the link deleted it from the server, so it is gone for everyone. Its copy in this browser has been removed too.</p>
+          <a href="#/">Back to my meetings</a>
+        </div>
+      </div>
     </>
   );
 }
@@ -805,7 +826,9 @@ function ShareModal({ link, seriesLink, seriesOverview, onClose }: { link: strin
   );
 }
 
-function SettingsModal({ settings, ops, peers, facilitators, onClose, onSaveAsTemplate }: { settings: Settings; ops: Ops; peers: Peer[]; facilitators: string[]; onClose: () => void; onSaveAsTemplate: () => void }) {
+function SettingsModal({ settings, ops, peers, facilitators, onClose, onSaveAsTemplate, sync, canDelete }: {
+  settings: Settings; ops: Ops; peers: Peer[]; facilitators: string[]; onClose: () => void; onSaveAsTemplate: () => void; sync: Sync; canDelete: boolean;
+}) {
   const [s, setS] = useState(settings);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
   const [remember, setRemember] = useState(false);
@@ -839,6 +862,25 @@ function SettingsModal({ settings, ops, peers, facilitators, onClose, onSaveAsTe
           </div>
           <span className="small muted">Facilitators move phases, run the timer and agenda, and close the meeting.</span>
         </div>
+        {sync.deleteFromServer && (
+          <div className="col" style={{ gap: 6 }}>
+            <h3>On the server</h3>
+            <span className="small muted">
+              {sync.expiresAt
+                ? `Stored, encrypted, until ${fmtDate(sync.expiresAt)}. The server deletes a meeting when nobody has changed it for a while; each change moves this date.`
+                : 'Stored, encrypted, until someone deletes it.'}
+            </span>
+            {canDelete && (
+              <div className="row">
+                <button type="button" className="danger" onClick={async () => {
+                  if (!(await ask('Delete this meeting from the server for everyone? It cannot be undone, and anyone who opens the link afterwards sees that it was deleted. Save the minutes or the meeting file first if you need a record.'))) return;
+                  sync.deleteFromServer?.();
+                  onClose();
+                }}>Delete from server…</button>
+              </div>
+            )}
+          </div>
+        )}
         <label className="check"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Use these card and voting settings for my new meetings</label>
         <p className="small muted" style={{ marginTop: -10 }}>Remembered in this browser. A template's own settings still take precedence.{getPrefs().meetingDefaults ? ' You already have saved defaults; this replaces them.' : ''}</p>
         <div className="row"><button type="button" onClick={onSaveAsTemplate} title="Reuse this board, stages and settings for future meetings">Save as a new template…</button><span className="spacer" /><button type="button" onClick={onClose}>Cancel</button><button className="primary" type="submit">Save</button></div>

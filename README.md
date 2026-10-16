@@ -91,7 +91,13 @@ A deployment can keep its own settings in a JSON file and apply them to the buil
 `node scripts/site-config.mjs site/lab.json` (part of `npm run cf:deploy`). The hosted lab site uses
 `site/lab.json`: server-only sync, so it never falls back to public relays, and the lab notice.
 
-Node server: `PORT` (8787), `DATA_DIR` (`./data`), `STATIC_DIR` (`./dist`).
+Node server: `PORT` (8787), `DATA_DIR` (`./data`), `STATIC_DIR` (`./dist`), `RETENTION_DAYS` (90).
+
+Retention and deletion: a room is deleted from the server `RETENTION_DAYS` after its last change (Cloudflare:
+`vars.RETENTION_DAYS` in `wrangler.jsonc`, checked by a Durable Object alarm; Node: an hourly sweep), never while
+someone has it open; `0` keeps rooms until deleted. A browser that still has a copy can store an expired meeting
+again. "Delete from server" (meeting settings, facilitators, not for series meetings) removes it for everyone and
+leaves a marker so old copies can't come back.
 
 ## Releasing (hosted lab site)
 
@@ -110,6 +116,10 @@ The workflow needs the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE
 Costs and limits: rooms use the Durable Object hibernation API, so open but idle tabs cost nothing, and
 heartbeats are answered without waking the room. Each network address may open 300 meeting connections a
 minute (`ratelimits` in `wrangler.jsonc`). Cloudflare's budget alert on the account emails when spending passes $10.
+
+Monitoring: `node scripts/uptime.mjs <site>` checks the app page, `api/health` and a real meeting room. The
+`Uptime` GitHub workflow runs it against the lab site every 15 minutes; a failed run
+emails the repository's notified people. `#/crash-test` shows the error screen on purpose, to check it on a live site.
 
 Changes go in through pull requests to https://github.com/spikinglabs/rondel; nobody pushes to `main` directly.
 

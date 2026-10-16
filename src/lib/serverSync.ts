@@ -28,6 +28,9 @@ export class ServerSync implements Sync {
   private nextId = 1;
   private open = false;
   private everOpen = false;
+  gone = false;
+  expiresAt: string | null = null;
+  private retentionDays = 0;
   private fatal = false;
   private destroyed = false;
   private attempts = 0;
@@ -132,6 +135,8 @@ export class ServerSync implements Sync {
           this.lastSeq = Math.max(this.lastSeq, e.seq);
         }
         this.open = this.everOpen = this.loaded = true;
+        this.expiresAt = msg.expiresAt ?? null;
+        this.retentionDays = msg.retentionDays ?? 0;
         this.attempts = 0;
         this.error = null;
         // Anything we have that the server doesn't (offline edits, a new meeting, an opened file).
@@ -148,6 +153,7 @@ export class ServerSync implements Sync {
         Y.applyUpdate(this.mirror, u);
         Y.applyUpdate(this.doc, u, this);
         this.lastSeq = Math.max(this.lastSeq, msg.seq);
+        this.touched();
         return;
       }
       case 'ack': {
@@ -155,6 +161,7 @@ export class ServerSync implements Sync {
         this.pending.delete(msg.id);
         if (u) Y.applyUpdate(this.mirror, u);
         this.lastSeq = Math.max(this.lastSeq, msg.seq);
+        this.touched();
         return;
       }
       case 'aw':
@@ -167,12 +174,26 @@ export class ServerSync implements Sync {
         return;
       case 'pong':
         return;
+      case 'deleted':
+        this.gone = this.fatal = true;
+        this.emit();
+        return;
       case 'error':
         this.error = msg.message;
-        if (msg.code === 'forbidden' || msg.code === 'version') this.fatal = true;
+        if (msg.code === 'forbidden' || msg.code === 'version' || msg.code === 'gone') this.fatal = true;
+        if (msg.code === 'gone') this.gone = true;
         this.emit();
         return;
     }
+  }
+
+  /** Every stored change moves the expiry date forward. */
+  private touched() {
+    if (this.retentionDays > 0) this.expiresAt = new Date(Date.now() + this.retentionDays * 86_400_000).toISOString();
+  }
+
+  deleteFromServer() {
+    this.raw({ t: 'delete' });
   }
 
   private raw(msg: ClientMessage) {
