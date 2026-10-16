@@ -1,0 +1,11 @@
+{
+  "sync": "server",
+  "lab": true,
+  "feedback": "https://github.com/spikinglabs/rondel/issues/new",
+  "operator": {
+    "name": "Spiking Labs",
+    "url": "https://spikinglabs.com",
+    "hosting": "cloudflare",
+    "retentionDays": 90
+  }
+}

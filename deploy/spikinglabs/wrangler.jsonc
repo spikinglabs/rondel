@@ -1,0 +1,39 @@
+// Spiking Labs' hosted Rondel: the lab site (rondel.lab.spikinglabs.com) and its staging site.
+// Deployed by GitHub Actions with `npm run lab:staging` and `npm run lab:deploy`; see "Releasing" in the README.
+// Paths are relative to this file.
+{
+  "name": "rondel",
+  "main": "../../server/cloudflare/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "routes": [{ "pattern": "rondel.lab.spikinglabs.com", "custom_domain": true }],
+  "assets": {
+    "directory": "../../dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "RoomObject" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomObject"] }],
+  // Meetings are deleted from the server this many days after their last change ("0": never).
+  "vars": { "RETENTION_DAYS": "90" },
+  // Meeting connections per network address per minute. A whole office can share one address, so this
+  // only stops scripts. namespace_id is any number unique within the account.
+  "ratelimits": [{ "name": "CONNECT_LIMIT", "namespace_id": "1001", "simple": { "limit": 300, "period": 60 } }],
+  // Staging: `npm run lab:staging` deploys a separate Worker with its own rooms to
+  // rondel-staging.<account>.workers.dev. Every change goes there first; see "Releasing" in the README.
+  "env": {
+    "staging": {
+      "name": "rondel-staging",
+      "routes": [],
+      "workers_dev": true,
+      "durable_objects": {
+        "bindings": [{ "name": "ROOMS", "class_name": "RoomObject" }]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomObject"] }],
+      "vars": { "RETENTION_DAYS": "90" },
+      "ratelimits": [{ "name": "CONNECT_LIMIT", "namespace_id": "1002", "simple": { "limit": 300, "period": 60 } }]
+    }
+  }
+}

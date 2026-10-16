@@ -1,5 +1,5 @@
-# Tests every pull request. Every merge to main goes to the staging site; a version tag (v0.24.0)
-# goes to the hosted lab site, after the same tests and a browser check of staging.
+# Tests every pull request (and the Docker setup in deploy/example/). Every merge to main goes to the staging
+# site; a version tag (v0.24.0) goes to the hosted lab site, after the same tests and a browser check of staging.
 name: CI
 
 on:
@@ -27,8 +27,24 @@ jobs:
       - run: npm run build
       - run: npm run test:e2e
 
+  # The self-hosting path: deploy/example/ with Docker Compose, checked like a real site.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: docker compose -f deploy/example/docker-compose.yml up -d --build --wait --wait-timeout 120 || (docker compose -f deploy/example/docker-compose.yml logs && exit 1)
+      - run: for i in $(seq 30); do curl -sf http://localhost:8787/api/health && break; sleep 2; done
+      - run: node scripts/uptime.mjs http://localhost:8787/
+      - run: curl -sf http://localhost:8787/ | grep -q '"Example Corp IT"'
+      - run: curl -sf http://localhost:8787/templates/weekly-team-meeting.yaml | grep -q 'Weekly team meeting'
+      - if: always()
+        run: docker compose -f deploy/example/docker-compose.yml logs
+
   staging:
-    needs: test
+    needs: [test, docker]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     concurrency: deploy-staging
@@ -43,9 +59,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run cf:staging
+      - run: npm run lab:staging
       # The first check right after a deploy can time out while the site updates.
-      - run: npm run check:staging || (sleep 20 && npm run check:staging)
+      - run: npm run lab:check-staging || (sleep 20 && npm run lab:check-staging)
 
   lab:
     needs: staging
@@ -63,5 +79,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run cf:deploy
-      - run: npm run check:live || (sleep 20 && npm run check:live)
+      - run: npm run lab:deploy
+      - run: npm run lab:check-live || (sleep 20 && npm run lab:check-live)

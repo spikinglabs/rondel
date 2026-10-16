@@ -1,0 +1,26 @@
+# An example organisation template. Every YAML file in this folder appears for everyone under
+# "From your organisation". The format is in the README ("Meeting templates").
+name: Weekly team meeting
+type: general
+description: Wins, blockers, and what we commit to this week
+title: Team meeting {date}
+columns:
+  - title: Wins
+    description: What went well this week
+  - title: Blockers
+    description: What is in the way
+agenda:
+  - title: Check-in round
+    minutes: 5
+    activity: round
+  - title: Wins and blockers
+    minutes: 15
+    activity: write
+  - title: Discuss blockers
+    minutes: 15
+    activity: discuss
+  - title: Agree actions
+    minutes: 5
+    activity: actions
+settings:
+  anonymous_cards: false

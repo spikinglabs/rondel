@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { TopBar } from '../components/ui';
 import { syncMode, type SyncMode } from '../lib/sync';
 import { isLab } from '../lib/lab';
+import { contactHref, operator } from '../lib/site';
 
 export const DATA_PAGE = '#/data';
 
@@ -19,7 +20,8 @@ export function DataPage() {
   const [mode, setMode] = useState<SyncMode | null>(null);
   useEffect(() => void syncMode().then(setMode), []);
   const host = location.host;
-  const ours = /(^|\.)spikinglabs\.(com|workers\.dev)$/.test(location.hostname);
+  const op = operator();
+  const contact = op && contactHref(op);
   const back = history.length > 1 ? () => history.back() : () => (location.hash = '#/');
 
   return (
@@ -81,9 +83,11 @@ export function DataPage() {
               The server sees when browsers connect and how much they send, but not who they are or what they write.
             </p>
             <p>
-              {ours
+              {op?.hosting === 'cloudflare'
                 ? <>{host} runs on Cloudflare (Workers and Durable Objects). Like any web host, Cloudflare handles the connections, so it sees IP addresses and timing in transit. To stop abuse, Rondel counts new connections per address for one minute; the count is not stored. </>
-                : <>{host} is run by your organisation or whoever set it up; ask them where it is hosted. </>}
+                : op?.hosting
+                  ? <>{op.hosting} </>
+                  : <>{host} is run by {op ? op.name : 'your organisation or whoever set it up'}; ask them where it is hosted. </>}
               Rondel itself keeps no logs and uses no analytics, cookies, fonts or scripts from other sites.
             </p>
           </Section>
@@ -109,7 +113,9 @@ export function DataPage() {
           <Section title="How long data is kept, and deleting it">
             <ul>
               <li>
-                The server deletes a meeting when nobody has changed it for 90 days{ours ? '' : ' (the default; whoever runs this site can change it)'} and nobody has it open.
+                {op?.retentionDays === 0
+                  ? 'The server keeps meetings until someone deletes them.'
+                  : `The server deletes a meeting when nobody has changed it for ${op?.retentionDays ?? 90} days${op?.retentionDays ? '' : ' (the default; whoever runs this site can change it)'} and nobody has it open.`}
                 Meeting settings show the date. Closing a meeting does not delete it. If someone whose browser still has a copy opens the link after that, the meeting is stored again from their copy.
               </li>
               <li>
@@ -118,7 +124,7 @@ export function DataPage() {
               </li>
               <li>"Remove from this browser" on the home page deletes your list entry and offline copy only. Others keep theirs, and the server copy stays.</li>
               <li>
-                For anything else, such as deleting a series, contact {ours ? <a href="https://spikinglabs.com" target="_blank" rel="noopener">Spiking Labs</a> : 'whoever runs this site'} with
+                For anything else, such as deleting a series, contact {op ? (contact ? <a href={contact} target="_blank" rel="noopener">{op.name}</a> : op.name) : 'whoever runs this site'} with
                 the meeting id: the part of the link between <code>/m/</code> and the key. Don't send the key.
               </li>
             </ul>

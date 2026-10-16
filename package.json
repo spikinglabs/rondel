@@ -11,12 +11,13 @@
     "start": "node --import tsx server/node/server.ts",
     "preview": "npm run build && npm start",
     "cf:dev": "wrangler dev",
-    "cf:deploy": "npm run build && node scripts/site-config.mjs site/lab.json && wrangler deploy",
-    "cf:staging": "npm run build && node scripts/site-config.mjs site/staging.json && wrangler deploy --env staging",
-    "check:staging": "export BASE_URL=https://rondel-staging.spikinglabs.workers.dev/ && node --import tsx e2e/server.mjs && node --import tsx e2e/lab.mjs",
-    "check:live": "export BASE_URL=https://rondel.lab.spikinglabs.com/ && node --import tsx e2e/server.mjs && node --import tsx e2e/lab.mjs",
+    "cf:deploy": "npm run build && wrangler deploy",
+    "lab:deploy": "npm run build && node scripts/site-config.mjs deploy/spikinglabs/lab.json && wrangler deploy -c deploy/spikinglabs/wrangler.jsonc",
+    "lab:staging": "npm run build && node scripts/site-config.mjs deploy/spikinglabs/staging.json && wrangler deploy -c deploy/spikinglabs/wrangler.jsonc --env staging",
+    "lab:check-staging": "export BASE_URL=https://rondel-staging.spikinglabs.workers.dev/ && node --import tsx e2e/server.mjs && node --import tsx e2e/lab.mjs",
+    "lab:check-live": "export BASE_URL=https://rondel.lab.spikinglabs.com/ && node --import tsx e2e/server.mjs && node --import tsx e2e/lab.mjs",
     "test": "node --import tsx --test test/*.test.ts",
-    "test:e2e": "node e2e/smoke.mjs && node --import tsx e2e/server.mjs && node --import tsx e2e/series.mjs && node --import tsx e2e/data.mjs && node --import tsx e2e/lab.mjs && node e2e/artifact.mjs && node --import tsx e2e/mobile.mjs"
+    "test:e2e": "node e2e/smoke.mjs && node --import tsx e2e/server.mjs && node --import tsx e2e/series.mjs && node --import tsx e2e/data.mjs && node --import tsx e2e/lab.mjs && node --import tsx e2e/site.mjs && node e2e/artifact.mjs && node --import tsx e2e/mobile.mjs"
   },
   "dependencies": {
     "@trystero-p2p/nostr": "^0.26.0",
