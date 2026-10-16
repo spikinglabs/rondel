@@ -72,7 +72,9 @@ export function DataPage() {
             <ul>
               <li>a random meeting id, taken from the link;</li>
               <li>a fingerprint that proves a browser has the key without revealing it, so people without the link can't write to the meeting;</li>
-              <li>the size and order of the updates.</li>
+              <li>the size and order of the updates;</li>
+              <li>when it last changed, so it can be deleted after a while;</li>
+              <li>after a meeting is deleted on purpose, only a note that its id was deleted, so old copies can't bring it back.</li>
             </ul>
             <p>
               Who is online, their names and where they are in the meeting are encrypted the same way, passed on to the others in the meeting, and never stored.
@@ -80,7 +82,7 @@ export function DataPage() {
             </p>
             <p>
               {ours
-                ? <>{host} runs on Cloudflare (Workers and Durable Objects). Like any web host, Cloudflare handles the connections, so it sees IP addresses and timing in transit. </>
+                ? <>{host} runs on Cloudflare (Workers and Durable Objects). Like any web host, Cloudflare handles the connections, so it sees IP addresses and timing in transit. To stop abuse, Rondel counts new connections per address for one minute; the count is not stored. </>
                 : <>{host} is run by your organisation or whoever set it up; ask them where it is hosted. </>}
               Rondel itself keeps no logs and uses no analytics, cookies, fonts or scripts from other sites.
             </p>
@@ -106,10 +108,17 @@ export function DataPage() {
 
           <Section title="How long data is kept, and deleting it">
             <ul>
-              <li>The server keeps a meeting until it is deleted by the people who run it. There is no automatic expiry yet, and closing a meeting does not delete it.</li>
+              <li>
+                The server deletes a meeting when nobody has changed it for 90 days{ours ? '' : ' (the default; whoever runs this site can change it)'} and nobody has it open.
+                Meeting settings show the date. Closing a meeting does not delete it. If someone whose browser still has a copy opens the link after that, the meeting is stored again from their copy.
+              </li>
+              <li>
+                A facilitator can delete a meeting from the server for everyone, in Meeting settings. That can't be undone, and browsers that still have a copy can't store it again;
+                they remove their copy when they open the link. Meetings in a recurring series can't be deleted this way yet; they expire like any other.
+              </li>
               <li>"Remove from this browser" on the home page deletes your list entry and offline copy only. Others keep theirs, and the server copy stays.</li>
               <li>
-                To have a meeting deleted from the server, contact {ours ? <a href="https://spikinglabs.com" target="_blank" rel="noopener">Spiking Labs</a> : 'whoever runs this site'} with
+                For anything else, such as deleting a series, contact {ours ? <a href="https://spikinglabs.com" target="_blank" rel="noopener">Spiking Labs</a> : 'whoever runs this site'} with
                 the meeting id: the part of the link between <code>/m/</code> and the key. Don't send the key.
               </li>
             </ul>

@@ -1,13 +1,14 @@
 // Rondel on any machine with Node 22+: serves the built app and stores meetings in one SQLite file.
 //   node --import tsx server/node/server.ts      (or the compiled version)
-// Settings: PORT (default 8787), DATA_DIR (default ./data), STATIC_DIR (default ./dist).
+// Settings: PORT (default 8787), DATA_DIR (default ./data), STATIC_DIR (default ./dist),
+//   RETENTION_DAYS (default 90; 0 keeps meetings until someone deletes them).
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { Room, ROOM_ID, type Conn } from '../core/room';
+import { DEFAULT_RETENTION_DAYS, Room, ROOM_ID, type Conn } from '../core/room';
 import { LIMITS, PROTOCOL_VERSION } from '../core/protocol';
-import { openDatabase, SqliteStore } from './sqlite-store';
+import { openDatabase, SqliteStore, staleRooms } from './sqlite-store';
 import { MemoryStore } from '../core/memory';
 
 const TYPES: Record<string, string> = {
@@ -15,15 +16,25 @@ const TYPES: Record<string, string> = {
   '.json': 'application/json', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json',
 };
 
-export function createServer(opts: { staticDir?: string; dataDir?: string | null } = {}) {
+export function createServer(opts: { staticDir?: string; dataDir?: string | null; retentionDays?: number } = {}) {
+  const retention = opts.retentionDays ?? DEFAULT_RETENTION_DAYS;
   const staticDir = path.resolve(opts.staticDir ?? 'dist');
   const db = opts.dataDir === null ? null : (fs.mkdirSync(opts.dataDir ?? 'data', { recursive: true }), openDatabase(path.join(opts.dataDir ?? 'data', 'rondel.sqlite')));
   const rooms = new Map<string, Room>();
   const roomFor = (id: string) => {
     let r = rooms.get(id);
-    if (!r) rooms.set(id, (r = new Room(db ? new SqliteStore(db, id) : new MemoryStore())));
+    if (!r) rooms.set(id, (r = new Room(db ? new SqliteStore(db, id) : new MemoryStore(), retention)));
     return r;
   };
+
+  // Once an hour, delete meetings nobody has changed within the retention time (and nobody has open).
+  const sweep = async () => {
+    if (!db || retention <= 0) return;
+    for (const id of staleRooms(db, retention)) await (rooms.get(id) ?? new Room(new SqliteStore(db, id), retention)).expire();
+  };
+  const sweeper = setInterval(() => void sweep(), 3_600_000);
+  sweeper.unref();
+  void sweep();
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://x');
@@ -66,11 +77,12 @@ export function createServer(opts: { staticDir?: string; dataDir?: string | null
     });
   });
 
-  return { server, close: () => new Promise<void>((r) => { wss.clients.forEach((c) => c.terminate()); server.close(() => (db?.close(), r())); }) };
+  return { server, sweep, close: () => new Promise<void>((r) => { clearInterval(sweeper); wss.clients.forEach((c) => c.terminate()); server.close(() => (db?.close(), r())); }) };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const port = Number(process.env.PORT ?? 8787);
-  const { server } = createServer({ staticDir: process.env.STATIC_DIR, dataDir: process.env.DATA_DIR });
+  const retentionDays = process.env.RETENTION_DAYS === undefined ? undefined : Number(process.env.RETENTION_DAYS);
+  const { server } = createServer({ staticDir: process.env.STATIC_DIR, dataDir: process.env.DATA_DIR, retentionDays });
   server.listen(port, () => console.log(`Rondel on http://localhost:${port}`));
 }

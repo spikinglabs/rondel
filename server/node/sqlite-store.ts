@@ -9,6 +9,7 @@ export function openDatabase(file: string) {
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS rooms (id TEXT PRIMARY KEY, auth_hash TEXT NOT NULL, created_at TEXT NOT NULL, touched_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS entries (room TEXT NOT NULL, seq INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (room, seq));
+    CREATE TABLE IF NOT EXISTS gone (id TEXT PRIMARY KEY, deleted_at TEXT NOT NULL);
   `);
   return db;
 }
@@ -38,6 +39,7 @@ export class SqliteStore implements RoomStore {
     try {
       this.db.prepare('DELETE FROM entries WHERE room = ? AND seq <= ?').run(this.room, upTo);
       this.db.prepare('INSERT INTO entries (room, seq, data) VALUES (?, ?, ?)').run(this.room, upTo, data);
+      this.db.prepare('UPDATE rooms SET touched_at = ? WHERE id = ?').run(new Date().toISOString(), this.room);
       this.db.exec('COMMIT');
     } catch (e) {
       this.db.exec('ROLLBACK');
@@ -48,4 +50,31 @@ export class SqliteStore implements RoomStore {
     const row = this.db.prepare('SELECT COUNT(*) AS count, COALESCE(SUM(LENGTH(data)), 0) AS bytes FROM entries WHERE room = ?').get(this.room) as { count: number; bytes: number };
     return { count: Number(row.count), bytes: Number(row.bytes) };
   }
+  async lastWrite() {
+    const has = this.db.prepare('SELECT 1 FROM entries WHERE room = ? LIMIT 1').get(this.room);
+    if (!has) return null;
+    const row = this.db.prepare('SELECT touched_at FROM rooms WHERE id = ?').get(this.room) as { touched_at: string } | undefined;
+    return row ? Date.parse(row.touched_at) : null;
+  }
+  async clear(tombstone: boolean) {
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('DELETE FROM entries WHERE room = ?').run(this.room);
+      this.db.prepare('DELETE FROM rooms WHERE id = ?').run(this.room);
+      if (tombstone) this.db.prepare('INSERT OR IGNORE INTO gone (id, deleted_at) VALUES (?, ?)').run(this.room, new Date().toISOString());
+      this.db.exec('COMMIT');
+    } catch (e) {
+      this.db.exec('ROLLBACK');
+      throw e;
+    }
+  }
+  async isGone() {
+    return !!this.db.prepare('SELECT 1 FROM gone WHERE id = ?').get(this.room);
+  }
+}
+
+/** Rooms whose last change is older than the retention time: candidates for Room.expire(). */
+export function staleRooms(db: DatabaseSync, retentionDays: number): string[] {
+  const before = new Date(Date.now() - retentionDays * 86_400_000).toISOString();
+  return (db.prepare('SELECT id FROM rooms WHERE touched_at < ?').all(before) as { id: string }[]).map((r) => r.id);
 }

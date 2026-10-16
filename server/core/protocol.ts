@@ -14,20 +14,26 @@ export type ClientMessage =
   /** An encrypted snapshot that replaces every stored entry up to and including `upTo`. */
   | { t: 'compact'; upTo: number; data: string }
   /** Heartbeat, so clients notice a dead connection quickly. */
-  | { t: 'ping' };
+  | { t: 'ping' }
+  /** Delete the meeting from the server for everyone. Later connections are refused with "gone". */
+  | { t: 'delete' };
 
 export type ServerMessage =
   /** Stored entries newer than the client's `since`, in order, plus how many others are connected. */
-  | { t: 'welcome'; entries: Entry[]; others: number; entryCount: number }
+  /** `expiresAt`: when the server deletes the meeting if nothing changes before then (ISO date), or null.
+   *  `retentionDays`: how long after each change that is (0: kept until deleted). */
+  | { t: 'welcome'; entries: Entry[]; others: number; entryCount: number; expiresAt?: string | null; retentionDays?: number }
   | { t: 'upd'; seq: number; data: string }
   | { t: 'ack'; id: number; seq: number }
   | { t: 'aw'; data: string }
   /** Someone joined or left; clients re-announce their presence on join. */
   | { t: 'peers'; others: number; joined: boolean }
   | { t: 'pong' }
+  /** Someone deleted the meeting from the server; the connection closes next. */
+  | { t: 'deleted' }
   | { t: 'error'; code: ErrorCode; message: string };
 
-export type ErrorCode = 'bad-request' | 'forbidden' | 'too-large' | 'room-full' | 'version';
+export type ErrorCode = 'bad-request' | 'forbidden' | 'too-large' | 'room-full' | 'version' | 'gone';
 
 export interface Entry {
   seq: number;
