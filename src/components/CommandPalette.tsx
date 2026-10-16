@@ -105,7 +105,6 @@ function Palette({ onClose }: { onClose: () => void }) {
     return order.map((g) => ({ group: g, items: results.filter((c) => c.group === g) }));
   }, [results]);
   const flat = grouped.flatMap((g) => g.items);
-  useEffect(() => setSel(0), [query]);
   useEffect(() => {
     listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
   }, [sel]);
@@ -130,7 +129,7 @@ function Palette({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-backdrop palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <div className="palette" role="dialog" aria-modal="true" aria-label="Command palette">
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder="Search or type a command…"
+        <input autoFocus value={q} onChange={(e) => { setQ(e.target.value); setSel(0); }} onKeyDown={onKey} placeholder="Search or type a command…"
           aria-label="Search or type a command" role="combobox" aria-expanded="true" aria-controls="palette-list"
           aria-activedescendant={flat[sel] ? `cmd-${sel}` : undefined} />
         <ul id="palette-list" role="listbox" ref={listRef} aria-label="Commands">
