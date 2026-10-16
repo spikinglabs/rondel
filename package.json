@@ -2,6 +2,7 @@
   "name": "rondel",
   "version": "0.23.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Retrospective and meeting tool: static app, end-to-end encrypted sync through a tiny room server (Node or Cloudflare) or peer-to-peer",
   "type": "module",
   "scripts": {
