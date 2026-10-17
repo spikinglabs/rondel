@@ -1,7 +1,7 @@
 # Interface languages
 
-Rondel's interface can be shown in any number of languages. Each person picks theirs under
-Your preferences → Language; until they do, the browser's language decides (or the site's `language` setting).
+Rondel's interface can be shown in any number of languages. Each person picks theirs in
+the language menu at the bottom of every page (or Your preferences); until they do, the browser's language decides (or the site's `language` setting).
 Meeting content (cards, agenda texts, names) is never translated: it stays as people wrote it.
 
 How it works: texts are written in English in the code and wrapped in `t('…')` (or `tn('one', 'other', n)` for

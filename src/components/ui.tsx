@@ -226,6 +226,11 @@ export function Footer() {
       {' · '}<a href={SOURCE_URL} target="_blank" rel="noopener">{t('Open source')}</a> · <a href="#/data">{t('How your data is handled')}</a>
       {feedback && <> · <a href={feedback} target="_blank" rel="noopener">{t('Send feedback')}</a></>}
       {installable && <> · <a href="#" onClick={(e) => { e.preventDefault(); void installApp(); }}>{t('Install as an app')}</a></>}
+      {LANGS.length > 1 && (
+        <> · <select className="lang-select" aria-label={t('Language')} title={t('Language')} value={getLang()} onChange={(e) => setLang(e.target.value)}>
+          {LANGS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+        </select></>
+      )}
     </footer>
   );
 }

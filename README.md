@@ -238,7 +238,7 @@ old one.
 
 ## Languages
 
-The interface is in English and German, chosen under Your preferences → Language (by default the browser's language).
+The interface is in English and German, chosen in the language menu at the bottom of every page or under Your preferences (by default the browser's language).
 Adding a language is one folder in `src/i18n/` and one line in `src/i18n/languages.ts`; `npm run i18n -- new`
 creates both. See [src/i18n/README.md](src/i18n/README.md).
 
