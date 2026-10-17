@@ -4,6 +4,10 @@ import { syncMode, type SyncMode } from '../lib/sync';
 import { isLab } from '../lib/lab';
 import { contactHref, operator } from '../lib/site';
 import { t, tn } from '../lib/i18n';
+import { VERSION } from '../lib/lab';
+import { CheckPicture, EncryptionPicture, LinkPicture } from '../components/DataPictures';
+
+const REPO = 'https://github.com/spikinglabs/rondel';
 
 export const DATA_PAGE = '#/data';
 
@@ -46,6 +50,7 @@ export function DataPage() {
           <p className="muted">
             {t('Rondel has no accounts and no tracking. Everything people write in a meeting is encrypted in their browser before it goes anywhere, with a key that only the people holding the meeting link have.')}
           </p>
+          <EncryptionPicture />
           {isLab() && (
             <p className="data-mode">
               <strong>{t('This is a test.')} </strong>
@@ -64,6 +69,7 @@ export function DataPage() {
           )}
 
           <Section title={t('The link is the key')}>
+            <LinkPicture />
             <p>
               {fill(t('A meeting link looks like {link}. The part after {hash} is never sent to any server; browsers keep it to themselves.'), {
                 link: <code>…/#/m/<em>{t('meeting')}</em>/<em>{t('key')}</em></code>,
@@ -160,9 +166,34 @@ export function DataPage() {
             </Section>
           )}
 
+          <CheckSection />
+
           <p className="faint small">{t('This page describes Rondel as it is built today. The source code is the final word, and anyone running their own copy can check it.')}</p>
         </div>
       </div>
     </>
+  );
+}
+
+/** How anyone can confirm that this site runs the published source code, which is what makes this page true. */
+function CheckSection() {
+  const release = VERSION === 'dev' ? REPO : `${REPO}/releases/tag/v${VERSION}`;
+  const site = `${location.origin}${location.pathname}`;
+  const csp = !!document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+  const commands = [`git clone ${REPO}`, 'cd rondel', `git checkout ${VERSION === 'dev' ? 'main' : `v${VERSION}`}`, 'npm ci && npm run build', `npm run verify -- ${site}`];
+  return (
+    <Section title={t('Check it yourself')}>
+      <CheckPicture />
+      <p>
+        {t('You don\'t have to take this page\'s word for it. Rondel is open source, and building its source code always gives exactly the same files. So anyone can build it and check that this site sends those files and nothing else.')}
+      </p>
+      <p>{fill(t('This site runs version {version}. On a computer with Git and Node.js, run:'), { version: <a href={release} target="_blank" rel="noopener">{VERSION}</a> })}</p>
+      <pre className="data-code"><code>{commands.join('\n')}</code></pre>
+      <p>
+        {t('It compares every file the site sends with your own build and shows the site\'s settings. Each release on GitHub also lists the fingerprints (SHA-256) of its files.')}
+        {csp && <> {t('This site also tells your browser that the page may connect only to this site\'s own server (a Content-Security-Policy), so the app cannot send anything anywhere else.')}</>}
+      </p>
+      <p>{t('A check shows what the site sent at that moment. An organisation that wants to be sure it never sends anything different can run its own copy of Rondel, built from the same source code.')}</p>
+    </Section>
   );
 }

@@ -969,4 +969,26 @@ export const texts: Record<string, string> = {
   'Own window, opens offline': 'Eigenes Fenster, öffnet sich offline',
   // pages/DataPage
   'A copy of the app\'s own files (no meeting content), so it opens without a connection and can be installed as an app.': 'Eine Kopie der Dateien der App selbst (ohne Meeting-Inhalte), damit sie ohne Verbindung startet und als App installiert werden kann.',
+  // components/DataPictures
+  'Agree the budget': 'Budget festlegen',
+  'What people write is encrypted in their browser. The server only stores and passes on scrambled data; the browsers of the others in the meeting turn it back into text.': 'Was Menschen schreiben, wird in ihrem Browser verschlüsselt. Der Server speichert und verteilt nur unlesbare Daten; erst die Browser der anderen im Meeting machen daraus wieder Text.',
+  'Your browser': 'Ihr Browser',
+  'Server': 'Server',
+  'Others in the meeting': 'Andere im Meeting',
+  'Browsers send only the address before the # to the server. The rest of the link, with the key, never leaves the browser.': 'Browser senden nur die Adresse vor dem # an den Server. Der Rest des Links, mit dem Schlüssel, verlässt den Browser nie.',
+  'Sent to the server': 'Geht an den Server',
+  'Never leaves your browser': 'Bleibt in Ihrem Browser',
+  'Building the open source code gives exactly the same files every time. Their fingerprints match the files this site sends, so anyone can check that it runs that code and nothing else.': 'Wer den Open-Source-Code baut, erhält jedes Mal genau dieselben Dateien. Ihre Fingerabdrücke stimmen mit den Dateien überein, die diese Website sendet. So kann jeder prüfen, dass sie genau diesen Code ausführt und nichts anderes.',
+  'Source code on GitHub': 'Quellcode auf GitHub',
+  'This site': 'Diese Website',
+  'build': 'bauen',
+  'download': 'laden',
+  'Same files': 'Dieselben Dateien',
+  // pages/DataPage
+  'Check it yourself': 'Selbst prüfen',
+  'You don\'t have to take this page\'s word for it. Rondel is open source, and building its source code always gives exactly the same files. So anyone can build it and check that this site sends those files and nothing else.': 'Sie müssen sich nicht auf diese Seite verlassen. Rondel ist Open Source, und wer den Quellcode baut, erhält immer genau dieselben Dateien. So kann jeder ihn bauen und prüfen, dass diese Website genau diese Dateien sendet und nichts anderes.',
+  'This site runs version {version}. On a computer with Git and Node.js, run:': 'Diese Website läuft mit Version {version}. Führen Sie auf einem Computer mit Git und Node.js aus:',
+  'It compares every file the site sends with your own build and shows the site\'s settings. Each release on GitHub also lists the fingerprints (SHA-256) of its files.': 'Das vergleicht jede Datei, die die Website sendet, mit Ihrem eigenen Build und zeigt die Einstellungen der Website. Jede Version auf GitHub listet außerdem die Fingerabdrücke (SHA-256) ihrer Dateien auf.',
+  'This site also tells your browser that the page may connect only to this site\'s own server (a Content-Security-Policy), so the app cannot send anything anywhere else.': 'Diese Website teilt Ihrem Browser außerdem mit, dass sich die Seite nur mit dem eigenen Server dieser Website verbinden darf (eine Content-Security-Policy). Die App kann also nichts anderswohin senden.',
+  'A check shows what the site sent at that moment. An organisation that wants to be sure it never sends anything different can run its own copy of Rondel, built from the same source code.': 'Eine Prüfung zeigt, was die Website in diesem Moment gesendet hat. Eine Organisation, die sicher sein will, dass sie nie etwas anderes sendet, kann eine eigene Kopie von Rondel betreiben, gebaut aus demselben Quellcode.',
 };

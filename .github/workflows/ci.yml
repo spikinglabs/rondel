@@ -63,6 +63,8 @@ jobs:
       - run: npm run lab:staging
       # The first check right after a deploy can time out while the site updates.
       - run: npm run lab:check-staging || (sleep 20 && npm run lab:check-staging)
+      # The site sends exactly what this commit builds (the check anyone can run; see the data page).
+      - run: npm run verify -- https://rondel-staging.spikinglabs.workers.dev/ || (sleep 20 && npm run verify -- https://rondel-staging.spikinglabs.workers.dev/)
 
   lab:
     needs: staging
@@ -82,6 +84,33 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run lab:deploy
       - run: npm run lab:check-live || (sleep 20 && npm run lab:check-live)
+      - run: npm run verify -- https://rondel.lab.spikinglabs.com/ || (sleep 20 && npm run verify -- https://rondel.lab.spikinglabs.com/)
+
+  # fingerprints.txt on the GitHub release: the SHA-256 of every file this version builds, so anyone can
+  # compare a site with it, and there is a public record of what each version is.
+  fingerprints:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run -s verify -- --list > fingerprints.txt && cat fingerprints.txt
+      - run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" fingerprints.txt --clobber
+          else
+            echo "::notice::No GitHub release for $GITHUB_REF_NAME, so fingerprints.txt was not attached."
+          fi
 
   # The Docker image for self-hosting, on each release: ghcr.io/spikinglabs/rondel:<version>, :<major.minor>, :latest.
   image:
