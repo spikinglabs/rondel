@@ -34,6 +34,14 @@ try {
   check(/\/issues\/new\?/.test(href) && decodeURIComponent(href.replace(/\+/g, ' ')).includes(`Rondel feedback (${version})`), `feedback link ${href}`);
   ok(`Lab tag, version ${version} in the footer, and Send feedback opens a new issue with the version filled in`);
 
+  // What search engines and AI assistants read without running the app; staging stays out of search results.
+  const html = await (await fetch(url)).text();
+  check(html.includes('<meta name="description"') && html.includes('<main class="boot">'), 'description and start-up text in the page');
+  const staging = /staging/.test(url);
+  check(html.includes('<meta name="robots" content="noindex"') === staging, staging ? 'staging is noindex' : 'the site is indexable');
+  check((await (await fetch(new URL('robots.txt', url))).text()).includes('User-agent'), 'robots.txt is served');
+  ok(`The page carries a description and readable text, robots.txt is served, and ${staging ? 'staging is kept out of search results' : 'the site can be indexed'}`);
+
   await page.goto(`${url}#/crash-test`);
   await page.getByRole('heading', { name: 'Something went wrong on this page' }).waitFor();
   const details = await page.getByLabel('Error details').inputValue();

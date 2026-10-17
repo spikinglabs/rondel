@@ -34,7 +34,7 @@ deploy/acme/
 
 | Setting | What it does |
 |---|---|
-| `name` | The name in the header and the browser tab. Defaults to "Rondel". If you run a changed copy as a service for others, please use your own name (see the Licence in the README). |
+| `name` | The name in the header, the browser tab and link previews. Defaults to "Rondel". If you run a changed copy as a service for others, please use your own name (see the Licence in the README). |
 | `sync` | `"server"` uses only your room server and never public relays (recommended with a server). `"auto"` falls back to peer-to-peer when no server answers. `"p2p"` never uses a server. |
 | `serverUrl` | A room server at another address than the app, e.g. `"https://rondel.example.workers.dev/"`. Leave it out when the server serves the app. |
 | `feedback` | An email address or a form URL for the footer's "Send feedback" link. `null` hides the link. |
@@ -44,6 +44,7 @@ deploy/acme/
 | `operator.hosting` | One or two sentences for the data page saying where the server runs, e.g. "Rondel runs on Example Corp's own servers in Frankfurt." `"cloudflare"` uses the built-in Cloudflare wording. |
 | `operator.retentionDays` | How many days the data page says unchanged meetings are kept. Must match the server's `RETENTION_DAYS`; `0` means kept until deleted. |
 | `lab` | `true` shows a "Lab" tag and a test notice, or a text such as `"Staging"` for the tag. |
+| `robots` | `"noindex"` keeps the site out of search results, e.g. for a staging copy. Leave it out for a public site. Meeting links are never indexed either way: everything after `#` stays in the browser. |
 | `templates` | Extra template files to list. Files in the `templates/` folder are added automatically. |
 | `strategy`, `relayUrls`, `turn` | Peer-to-peer details; see `index.html`. |
 

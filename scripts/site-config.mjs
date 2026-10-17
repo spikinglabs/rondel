@@ -16,7 +16,9 @@ const block = /(window\.RONDEL_CONFIG = window\.RONDEL_CONFIG \|\| )(\{[\s\S]*?\
 const m = block.exec(html);
 if (!m) throw new Error('No RONDEL_CONFIG block in dist/index.html');
 const defaults = new Function(`return ${m[2]}`)();
-const merged = { ...defaults, ...site };
+// robots is for the page, not the app: e.g. "noindex" keeps a staging copy out of search results.
+const { robots, ...settings } = site;
+const merged = { ...defaults, ...settings };
 
 const templateDir = join(dirname(file), 'templates');
 if (existsSync(templateDir)) {
@@ -28,5 +30,18 @@ if (existsSync(templateDir)) {
 }
 
 const json = JSON.stringify(merged, null, 2).replace(/\n/g, '\n      ');
-writeFileSync(path, html.replace(block, (_, start) => `${start}${json};`));
+let out = html.replace(block, (_, start) => `${start}${json};`);
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+// The page's own name (tab, link previews, the text before the app starts), so it matches what the app shows.
+if (merged.name?.trim()) {
+  const name = esc(merged.name.trim());
+  out = out
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${name}</title>`)
+    .replace(/(<meta property="og:title" content=")[^"]*/, (_, start) => start + name)
+    .replace(/(<main class="boot">\s*<h1>)[^<]*/, (_, start) => start + name);
+}
+// Running it again (a container restart) replaces the tag rather than adding a second one.
+out = out.replace(/\n\s*<meta name="robots"[^>]*>/, '');
+if (robots) out = out.replace('</title>', () => `</title>\n    <meta name="robots" content="${esc(robots)}" />`);
+writeFileSync(path, out);
 console.log(`Applied ${file} to dist/index.html`);
