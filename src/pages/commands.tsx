@@ -4,6 +4,7 @@ import { toast } from '../components/ui';
 import { useEffect, useState } from 'react';
 import { BackupModal } from '../components/Backup';
 import { feedbackHref } from '../lib/lab';
+import { canInstall, installApp } from '../pwa/register';
 
 let showBackup: (() => void) | null = null;
 /** Open the backup and restore dialog from anywhere. */
@@ -32,6 +33,7 @@ export function GlobalCommands() {
     if (!here.startsWith('#/data')) out.push({ id: 'data', group: 'Go to', label: 'How your data is handled', keywords: 'privacy security encryption data storage server delete gdpr trust', run: () => (location.hash = '#/data') });
     const feedback = feedbackHref();
     if (feedback) out.push({ id: 'feedback', group: 'Go to', label: 'Send feedback', keywords: 'feedback bug problem report idea suggestion help contact lab', run: () => window.open(feedback, '_blank', 'noopener') });
+    if (canInstall()) out.push({ id: 'install', group: 'Preferences', label: 'Install as an app', hint: 'Own window, opens offline', keywords: 'install app desktop pwa offline window shortcut', run: installApp });
     out.push({ id: 'backup', group: 'Preferences', label: 'Back up this browser', hint: 'To move to another browser', keywords: 'export backup move migrate transfer device save', run: () => setBackup(true) });
     out.push({ id: 'restore', group: 'Preferences', label: 'Restore a backup', keywords: 'import backup move migrate transfer device load', run: () => setBackup(true) });
     return out;

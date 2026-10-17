@@ -12,8 +12,10 @@ import { DataPage } from './pages/DataPage';
 import { CrashTest, ErrorScreen } from './components/ErrorScreen';
 import { applyTheme, getIdentity, type Identity } from './lib/store';
 import { appName } from './lib/site';
+import { registerApp } from './pwa/register';
 
 applyTheme();
+registerApp();
 
 /** Accept the dotted invite forms (#m.<room>.<key>, #s.<series>.<key>) and turn them into the normal routes. */
 function normalizeHash() {

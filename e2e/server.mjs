@@ -400,7 +400,19 @@ try {
   assert(await laptop.getByRole('button', { name: `Edit ${v2}` }).count() === 1, 'the earlier version is still there');
   ok('Dan saved the meeting as a new version of its template ("… (v2)"), then made a v3 from the picker; v2 stayed as it was');
 
-  // ------------------------------------------------------------- the server only holds ciphertext
+  // ------------------------------------------------------------- installable, and opens offline
+  const fay = await person('Fay');
+  const manifest = await fay.evaluate(async () => (await fetch(document.querySelector('link[rel=manifest]').href)).json());
+  assert(manifest.display === 'standalone' && manifest.icons.some((i) => i.sizes === '512x512'), `manifest: ${JSON.stringify(manifest)}`);
+  await fay.evaluate(() => navigator.serviceWorker.ready);
+  await fay.reload();
+  await fay.waitForFunction(() => !!navigator.serviceWorker.controller);
+  await fay.context().setOffline(true);
+  await fay.reload();
+  await fay.getByRole('button', { name: 'New meeting' }).waitFor({ timeout: 10000 });
+  await fay.context().setOffline(false);
+  ok('Rondel can be installed as an app (manifest, service worker), and Fay could reopen it with no connection');
+
   if (!external) {
     const { DatabaseSync } = await import('node:sqlite');
     const db = new DatabaseSync(path.join(dataDir, 'rondel.sqlite'));

@@ -4,6 +4,7 @@ import { openBackup } from '../pages/commands';
 import { getPrefs, knownPeople, setName, setPrefs, type Identity, type Theme } from '../lib/store';
 import { feedbackHref, isLab, labLabel, VERSION } from '../lib/lab';
 import { appName, operator, SOURCE_URL } from '../lib/site';
+import { canInstall, installApp, onInstallable } from '../pwa/register';
 
 let pushToast: (msg: string) => void = () => {};
 export const toast = (msg: string) => pushToast(msg);
@@ -200,6 +201,8 @@ export function TopBar(props: { crumbs?: string[]; right?: ReactNode }) {
 }
 
 export function Footer() {
+  const [installable, setInstallable] = useState(canInstall());
+  useEffect(() => onInstallable(() => setInstallable(canInstall())), []);
   const feedback = feedbackHref();
   const op = operator();
   return (
@@ -208,6 +211,7 @@ export function Footer() {
       {op && <> · Run by {op.url ? <a href={op.url} target="_blank" rel="noopener">{op.name}</a> : op.name}</>}
       {' · '}<a href={SOURCE_URL} target="_blank" rel="noopener">Open source</a> · <a href="#/data">How your data is handled</a>
       {feedback && <> · <a href={feedback} target="_blank" rel="noopener">Send feedback</a></>}
+      {installable && <> · <a href="#" onClick={(e) => { e.preventDefault(); void installApp(); }}>Install as an app</a></>}
     </footer>
   );
 }

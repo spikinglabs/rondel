@@ -98,6 +98,7 @@ export function DataPage() {
               <li>The list of your meetings and series, with their links, your preferences and My templates.</li>
               <li>An offline copy of each meeting you opened, so it opens quickly and works without a connection.</li>
               <li>Drafts you haven't shared yet. They never leave your browser.</li>
+              <li>A copy of the app's own files (no meeting content), so it opens without a connection and can be installed as an app.</li>
             </ul>
             <p>Clearing your browser's site data removes all of this. Meetings stored on the server are not affected, and opening a link again brings them back.</p>
           </Section>
