@@ -83,6 +83,16 @@ Meetings are stored in one SQLite file in `/data`. With Docker Compose:
 docker compose -f deploy/acme/docker-compose.yml up -d
 ```
 
+The example builds the image from your checkout. To skip building, use the ready-made image that each release
+publishes, and replace `build: ../..` with `image: ghcr.io/spikinglabs/rondel:latest` (or pin a release such as `0.27.0`,
+or the newest `0.27.x` with `0.27`). It runs on amd64 and arm64; the first published release is 0.27.0. Without Compose:
+
+```sh
+docker run -d -p 8787:8787 -v rondel-data:/data \
+  -v "$PWD/deploy/acme:/site:ro" -e SITE_CONFIG=/site/site.json \
+  ghcr.io/spikinglabs/rondel:latest
+```
+
 The image applies `SITE_CONFIG` (your `site.json`, with `templates/` next to it) each time it starts, so changing
 a setting or a template only needs a restart. Put it behind your usual HTTPS reverse proxy; browsers need
 HTTPS for the encryption to work on anything but `localhost`. The proxy must pass WebSocket upgrades on `/api/`.
@@ -113,6 +123,7 @@ preparing a meeting at different times does not work. Build, apply your folder w
 
 ## 3. Updating
 
-Pull the new version, then repeat the build and deploy step (or `docker compose ... up -d --build`). Your
+Pull the new version, then repeat the build and deploy step (or `docker compose ... up -d --build`; with the
+ready-made image, change its tag or run `docker compose pull` first). Your
 settings folder and your meetings are untouched. The release notes on GitHub say when a change needs anything
 from you.
