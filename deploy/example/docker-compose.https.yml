@@ -1,0 +1,29 @@
+# Rondel with HTTPS on one machine (a cloud VM such as AWS EC2, or a server of your own):
+#   RONDEL_HOST=rondel.example.com docker compose -f deploy/example/docker-compose.https.yml up -d
+# Caddy answers on ports 80 and 443 and gets the certificate; Rondel itself is not exposed.
+# See DEPLOY.md and DEPLOY-WITH-AI.md.
+services:
+  rondel:
+    image: ghcr.io/spikinglabs/rondel:0.27   # newest 0.27.x; or build: ../.. to build from this checkout
+    environment:
+      SITE_CONFIG: /site/site.json   # this folder's settings and templates/
+      RETENTION_DAYS: "90"           # match operator.retentionDays in site.json
+    volumes:
+      - ./:/site:ro
+      - rondel-data:/data            # the meetings: back this up
+    restart: unless-stopped
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      RONDEL_HOST: ${RONDEL_HOST:?set RONDEL_HOST to the address people open, e.g. rondel.example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data             # certificates
+    depends_on: [rondel]
+    restart: unless-stopped
+volumes:
+  rondel-data:
+  caddy-data:

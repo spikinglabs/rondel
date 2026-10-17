@@ -1,0 +1,6 @@
+# HTTPS in front of Rondel with Caddy, which gets and renews a certificate by itself.
+# RONDEL_HOST is the address people open, e.g. rondel.example.com; its DNS must point at this machine,
+# and ports 80 and 443 must be reachable for the certificate. WebSockets on /api/ pass through as they are.
+{$RONDEL_HOST} {
+	reverse_proxy rondel:8787
+}

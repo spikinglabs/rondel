@@ -1,7 +1,8 @@
 # Running your own Rondel
 
 Rondel is a static web app plus a small room server. You can run it for your team or company on Cloudflare,
-on any machine with Node or Docker, or as plain static files. Your settings and your organisation's meeting
+on any machine with Node or Docker, or as plain static files. To have an AI assistant set it up, for example in
+your AWS account, point it at [DEPLOY-WITH-AI.md](DEPLOY-WITH-AI.md). Your settings and your organisation's meeting
 templates live in one folder, so updating to a new Rondel version never touches them.
 
 ## 1. Make your settings folder
@@ -98,6 +99,9 @@ docker run -d -p 8787:8787 -v rondel-data:/data \
 The image applies `SITE_CONFIG` (your `site.json`, with `templates/` next to it) each time it starts, so changing
 a setting or a template only needs a restart. Put it behind your usual HTTPS reverse proxy; browsers need
 HTTPS for the encryption to work on anything but `localhost`. The proxy must pass WebSocket upgrades on `/api/`.
+On a machine of its own, such as a cloud VM, `deploy/example/docker-compose.https.yml` adds Caddy, which gets the
+certificate by itself: `RONDEL_HOST=rondel.example.com docker compose -f deploy/acme/docker-compose.https.yml up -d`.
+Run exactly one copy: open meetings live in the server's memory, so two copies behind a load balancer split them.
 
 Without Docker, on any machine with Node 22.5 or later:
 
