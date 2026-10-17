@@ -214,36 +214,20 @@ The designer and the YAML tab edit the same template; editing in the designer re
 
 ## Meeting templates (YAML)
 
-Every template, including the built-in ones (`src/templates/builtin.ts`), is a small YAML file:
-
-```yaml
-name: Sprint retro                 # required
-type: retro                        # retro | standup | planning | one_on_one | general (default general)
-description: Shown in the template picker
-title: Sprint retro {date}         # default meeting title; {date} becomes today's date
-columns:                           # the card board; leave out for none
-  - title: Went well
-    description: Wins worth repeating
-  - To improve                     # a plain line works too
-agenda:
-  - title: Review last actions
-    minutes: 5                     # whole minutes, default 5
-    activity: topic                # topic | round | write | group | vote | discuss | actions | break
-    owner: Facilitator
-    notes: |                       # pre-filled meeting notes
-      Which actions are still open?
-  - Board                          # a plain line works too
-settings:
-  anonymous_cards: true            # hide who wrote each card
-  votes_per_person: 5              # 0 = unlimited
-  votes_per_card: 3                # 0 = unlimited
-  secret_voting: true              # hide votes until the facilitator reveals them
-```
+Every template, including the built-in ones (`src/templates/builtin.ts`), is a small YAML file with a name, an
+optional card board, a timed agenda and voting rules. [TEMPLATES.md](TEMPLATES.md) describes every field.
 
 - **Your own templates:** Design a meeting, or New meeting → Design new… (or Import .yaml…, or Copy on any template). The editor checks the YAML as you type, points to the line of each problem, and previews the result. Saved templates live in your browser; Download .yaml to share one.
-- **Save as template:** in a meeting, Settings → Save as meeting design… turns its board, agenda and settings into YAML.
-- **For everyone in your organisation:** put YAML files in a `templates/` folder next to your `site.json` (see [DEPLOY.md](DEPLOY.md)); `scripts/site-config.mjs` copies them next to the app and lists them in `RONDEL_CONFIG.templates`. You can also list files yourself, for example `["templates/board-meeting.yaml"]`. They appear under "From your organisation".
+- **Save as template:** in a meeting, Settings → Save as a new template… turns its board, agenda and settings into YAML.
+- **For everyone in your organisation:** put YAML files in a `templates/` folder next to your `site.json` (see [DEPLOY.md](DEPLOY.md)). They appear under "From your organisation".
 - A meeting keeps a copy of its template, so "Start the next meeting" works for everyone in it, even if the template was only in one person's browser.
+
+## Keeping old meetings working
+
+`test/compat/` holds a meeting, a series, an encrypted update, a backup and a template as each release saved
+them, and `npm test` checks that the current code still reads them the same. When a release changes how
+anything is stored, run `node --import tsx scripts/compat-fixture.ts` and commit the new file; never edit an
+old one.
 
 ## Licence
 
