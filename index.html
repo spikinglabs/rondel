@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
     <title>Rondel</title>
+    <meta name="description" content="Retrospectives and team meetings, end-to-end encrypted in the browser. No accounts: share a link. Open source." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Rondel" />
+    <meta property="og:description" content="Retrospectives and team meetings, end-to-end encrypted in the browser. No accounts: share a link. Open source." />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b5bdb'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='white'/%3E%3C/svg%3E" />
     <script>
       // Connection settings. IT can edit this block after the build without rebuilding.
@@ -29,7 +33,19 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Shown until the app starts, and to readers that don't run JavaScript (search engines, AI assistants). -->
+    <div id="root">
+      <main class="boot">
+        <h1>Rondel</h1>
+        <p>Retrospectives and team meetings: write, group, vote, discuss and agree actions in a retro, or run a
+          meeting with an agenda, timer, shared notes, decisions and action items. Prepare before it starts, and
+          repeat it weekly or monthly from one link.</p>
+        <p>Everything people write is encrypted in the browser with a key that lives only in the meeting link, so
+          the server cannot read it. No accounts. Open source under Apache-2.0:
+          <a href="https://github.com/spikinglabs/rondel">github.com/spikinglabs/rondel</a>.</p>
+        <noscript><p>Rondel needs JavaScript to run.</p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

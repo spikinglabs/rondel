@@ -1,5 +1,9 @@
 # Rondel
 
+Rondel is an open-source, end-to-end encrypted tool for team retrospectives and meetings, with no accounts:
+you share a link. Try it at [rondel.lab.spikinglabs.com](https://rondel.lab.spikinglabs.com), or run your own copy
+([DEPLOY.md](DEPLOY.md)).
+
 Retrospectives and everyday meetings: write, group, vote, discuss, agree actions; agenda, timer,
 shared notes, decisions and action items; prepare before the meeting, carry open actions into the next one.
 

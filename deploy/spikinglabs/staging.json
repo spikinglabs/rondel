@@ -7,5 +7,6 @@
     "url": "https://spikinglabs.com",
     "hosting": "cloudflare",
     "retentionDays": 90
-  }
+  },
+  "robots": "noindex"
 }

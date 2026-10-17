@@ -22,6 +22,19 @@ check(fs.existsSync(path.join(dist, 'templates/weekly-team-meeting.yaml')), 'tem
 check(!fs.readFileSync('dist/index.html', 'utf8').includes('Example Corp'), 'the original dist is untouched');
 ok('site-config merges the settings into index.html and copies the templates folder');
 
+// The page's name and a robots setting; applying the settings twice (a container restart) changes nothing more.
+const named = fs.mkdtempSync(path.join(os.tmpdir(), 'rondel-site-named-'));
+fs.cpSync('dist', named, { recursive: true });
+const settings = path.join(named, 'site.json');
+fs.writeFileSync(settings, JSON.stringify({ name: 'Huddle & Co', robots: 'noindex' }));
+for (let i = 0; i < 2; i++) execFileSync('node', ['scripts/site-config.mjs', settings], { env: { ...process.env, RONDEL_DIST: named + '/' } });
+const h2 = fs.readFileSync(path.join(named, 'index.html'), 'utf8');
+check(h2.includes('<title>Huddle &amp; Co</title>') && h2.includes('content="Huddle &amp; Co"') && /<h1>Huddle &amp; Co</.test(h2), 'name in title, og:title and start-up text');
+check(h2.split('name="robots"').length === 2 && h2.includes('<meta name="robots" content="noindex" />'), 'one robots tag');
+check(!h2.includes('"robots":'), 'robots is not an app setting');
+check(!fs.readFileSync(path.join(dist, 'index.html'), 'utf8').includes('name="robots"'), 'no robots tag unless set');
+ok('site-config puts the name in the page title, link preview and start-up text, and adds a robots tag once');
+
 const { createServer } = await import('../server/node/server.ts');
 const srv = createServer({ staticDir: dist, dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'rondel-site-')) });
 await new Promise((r) => srv.server.listen(PORT, r));
