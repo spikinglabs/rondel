@@ -84,13 +84,13 @@ docker compose -f deploy/acme/docker-compose.yml up -d
 ```
 
 The example builds the image from your checkout. To skip building, use the ready-made image that each release
-publishes, and replace `build: ../..` with `image: ghcr.io/spikinglabs/rondel:0.26` (a release such as `0.26.0`,
-the newest `0.26.x` with `0.26`, or `latest`). It runs on amd64 and arm64. Without Compose:
+publishes, and replace `build: ../..` with `image: ghcr.io/spikinglabs/rondel:latest` (or pin a release such as `0.27.0`,
+or the newest `0.27.x` with `0.27`). It runs on amd64 and arm64; the first published release is 0.27.0. Without Compose:
 
 ```sh
 docker run -d -p 8787:8787 -v rondel-data:/data \
   -v "$PWD/deploy/acme:/site:ro" -e SITE_CONFIG=/site/site.json \
-  ghcr.io/spikinglabs/rondel:0.26
+  ghcr.io/spikinglabs/rondel:latest
 ```
 
 The image applies `SITE_CONFIG` (your `site.json`, with `templates/` next to it) each time it starts, so changing
