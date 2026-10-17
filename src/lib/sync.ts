@@ -65,6 +65,8 @@ export interface Sync {
   readonly expiresAt?: string | null;
   /** Delete the meeting from the room server for everyone. Only room servers offer this. */
   deleteFromServer?(): void;
+  /** Resolves once the room server has stored every change made so far (or after `ms`). Only room servers offer this. */
+  flushed?(ms?: number): Promise<void>;
   onChange(fn: () => void): () => void;
   destroy(): void;
 }

@@ -103,8 +103,10 @@ Node server: `PORT` (8787), `DATA_DIR` (`./data`), `STATIC_DIR` (`./dist`), `RET
 Retention and deletion: a room is deleted from the server `RETENTION_DAYS` after its last change (Cloudflare:
 `vars.RETENTION_DAYS` in `wrangler.jsonc`, checked by a Durable Object alarm; Node: an hourly sweep), never while
 someone has it open; `0` keeps rooms until deleted. A browser that still has a copy can store an expired meeting
-again. "Delete from server" (meeting settings, facilitators, not for series meetings) removes it for everyone and
-leaves a marker so old copies can't come back.
+again. "Delete from server" (meeting settings, facilitators) removes it for everyone and
+leaves a marker so old copies can't come back. In a series, the deleted meeting is marked in the series document first,
+so the series link moves past its room; "Delete series from server" (series overview, series facilitators) deletes
+every meeting and then the series document.
 
 ## Releasing (hosted lab site)
 

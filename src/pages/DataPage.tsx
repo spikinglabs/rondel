@@ -121,11 +121,11 @@ export function DataPage() {
               </li>
               <li>
                 A facilitator can delete a meeting from the server for everyone, in Meeting settings. That can't be undone, and browsers that still have a copy can't store it again;
-                they remove their copy when they open the link. Meetings in a recurring series can't be deleted this way yet; they expire like any other.
+                they remove their copy when they open the link. In a recurring series this works for one meeting at a time, and a series facilitator can delete the whole series with all its meetings from the series overview.
               </li>
               <li>"Remove from this browser" on the home page deletes your list entry and offline copy only. Others keep theirs, and the server copy stays.</li>
               <li>
-                For anything else, such as deleting a series, contact {op ? (contact ? <a href={contact} target="_blank" rel="noopener">{op.name}</a> : op.name) : 'whoever runs this site'} with
+                For anything else, contact {op ? (contact ? <a href={contact} target="_blank" rel="noopener">{op.name}</a> : op.name) : 'whoever runs this site'} with
                 the meeting id: the part of the link between <code>/m/</code> and the key. Don't send the key.
               </li>
             </ul>

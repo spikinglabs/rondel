@@ -196,6 +196,12 @@ export class ServerSync implements Sync {
     this.raw({ t: 'delete' });
   }
 
+  async flushed(ms = 5000) {
+    const until = Date.now() + ms;
+    await this.out;
+    while ((this.pending.size || !this.open) && !this.fatal && Date.now() < until) await new Promise((r) => setTimeout(r, 50));
+  }
+
   private raw(msg: ClientMessage) {
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(msg));
   }
