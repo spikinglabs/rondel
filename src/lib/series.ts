@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 import type { TemplateDef } from './model';
 import type { Sync } from './sync';
+import { locale, t } from './i18n';
 
 // A recurring meeting series. One stable link (#/s/<id>/<key>) goes into the calendar invite; opening it
 // lands on the meeting for the current period. Each period's meeting has its own room, derived from the
@@ -13,11 +14,11 @@ import type { Sync } from './sync';
 export type Cadence = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'none';
 export const CADENCES: Cadence[] = ['daily', 'weekly', 'monthly', 'none'];
 export const CADENCE_LABEL: Record<Cadence, string> = {
-  daily: 'Daily', weekly: 'Weekly, or every few weeks', biweekly: 'Weekly, or every few weeks', monthly: 'Monthly, or every few months', none: 'Irregular (next one starts when the last is closed)',
+  daily: t('Daily'), weekly: t('Weekly, or every few weeks'), biweekly: t('Weekly, or every few weeks'), monthly: t('Monthly, or every few months'), none: t('Irregular (next one starts when the last is closed)'),
 };
-export const CADENCE_SHORT: Record<Cadence, string> = { daily: 'Daily', weekly: 'Weekly', biweekly: 'Weekly', monthly: 'Monthly', none: 'Irregular' };
+export const CADENCE_SHORT: Record<Cadence, string> = { daily: t('Daily'), weekly: t('Weekly'), biweekly: t('Weekly'), monthly: t('Monthly'), none: t('Irregular') };
 /** How the period reads in "Start another meeting this …". */
-export const PERIOD_WORD: Record<Cadence, string> = { daily: 'today', weekly: 'this week', biweekly: 'this week', monthly: 'this month', none: '' };
+export const PERIOD_WORD: Record<Cadence, string> = { daily: t('today'), weekly: t('this week'), biweekly: t('this week'), monthly: t('this month'), none: '' };
 
 export interface Facilitator { id: string; name: string }
 export interface SeriesInfo {
@@ -127,10 +128,10 @@ export function nextAfter(cadence: Cadence, occ: string, occurrences: Record<str
 /** How a period reads in a meeting title: "Week 42, 2026", "October 2026", "15 Oct 2026". */
 export function periodLabel(cadence: Cadence, period: string): string {
   const w = period.match(/^(\d{4})-W(\d{2})/);
-  if (w) return `Week ${Number(w[2])}, ${w[1]}`;
+  if (w) return t('Week {week}, {year}', { week: Number(w[2]), year: w[1] });
   const d = periodStart(period);
-  if (!d) return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  return cadence === 'monthly' ? d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (!d) return new Date().toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: 'numeric' });
+  return cadence === 'monthly' ? d.toLocaleDateString(locale(), { month: 'long', year: 'numeric' }) : d.toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export type Decision =
@@ -254,11 +255,11 @@ export function seriesLink(id: string, key: string) {
 
 export function inviteText(info: SeriesInfo, link: string) {
   const lines = [
-    `Meeting board (Rondel): ${link}`,
-    `This link always opens the current meeting. No sign-up needed; the part after # is the key, so keep the link within the team.`,
+    t('Meeting board (Rondel): {link}', { link }),
+    t('This link always opens the current meeting. No sign-up needed; the part after # is the key, so keep the link within the team.'),
   ];
   const agenda = info.template.agenda;
-  if (agenda.length) lines.push('', 'Agenda:', ...agenda.map((a) => `- ${a.title}${a.durationMin ? ` (${a.durationMin} min)` : ''}`));
+  if (agenda.length) lines.push('', t('Agenda:'), ...agenda.map((a) => `- ${a.title}${a.durationMin ? ` (${t('{n} min', { n: a.durationMin })})` : ''}`));
   return lines.join('\n');
 }
 

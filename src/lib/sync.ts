@@ -15,6 +15,9 @@ export interface RondelConfig {
   lab?: boolean | string;
   /** Where "Send feedback" goes: an email address or a web address (a form). Hidden when empty. */
   feedback?: string | null;
+  /** Interface language when the person hasn't chosen one, as a code from src/i18n/languages.ts ("en", "de").
+   *  Default: the browser's language. */
+  language?: string;
   /** The product name in the header and the browser tab, if this installation uses its own name. */
   name?: string;
   /** Who runs this installation, shown in the footer and on the data page. */

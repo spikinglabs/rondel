@@ -6,10 +6,11 @@ import { createSync, type Sync } from '../lib/sync';
 import { queueSeriesMeeting } from '../lib/useMeeting';
 import { downloadText, slug } from '../lib/files';
 import {
-  CADENCE_SHORT, PERIOD_WORD, basePeriod, decide, initSeries, inviteText, nextAfter, occurrenceRoom, periodLabel, periodOf, readSeries,
-  forgetSeries, seriesIcs, seriesLink, seriesOps, upsertSeries, whenLoaded, type Occurrence, type SeriesInfo,
+  CADENCE_SHORT, basePeriod, decide, initSeries, inviteText, nextAfter, occurrenceRoom, periodLabel, periodOf, readSeries,
+  forgetSeries, seriesIcs, seriesLink, seriesOps, upsertSeries, whenLoaded, type Cadence, type Occurrence, type SeriesInfo,
 } from '../lib/series';
 import { PrefsButton, TopBar, ask, copyText, fmtDate, toast, toastError } from '../components/ui';
+import { locale, t, tn } from '../lib/i18n';
 
 /** Series created in this browser, to write into their documents once storage has loaded. */
 const pendingSeries = new Map<string, SeriesInfo>();
@@ -55,7 +56,7 @@ function useSeriesDoc(id: string | null, key: string | null) {
 /** "Team retro – Week 42, 2026", "– October 2026"; anyone can rename it in the meeting. */
 export function titleFor(info: SeriesInfo, occ: string, n: number, now = new Date()) {
   if (info.template.title) return fillTitle(info.template, now) + (n > 1 ? ` (${n})` : '');
-  if (info.cadence === 'none') return `${info.name} – ${now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  if (info.cadence === 'none') return `${info.name} – ${now.toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: 'numeric' })}`;
   return `${info.name} – ${periodLabel(info.cadence, basePeriod(info.cadence, occ))}${n > 1 ? ` (${n})` : ''}`;
 }
 
@@ -81,7 +82,7 @@ async function deleteRoom(roomId: string, key: string) {
   const doc = new Y.Doc();
   const sync = await createSync(doc, roomId, key);
   try {
-    if (!sync.deleteFromServer) throw new Error('There is no meeting server to delete from.');
+    if (!sync.deleteFromServer) throw new Error(t('There is no meeting server to delete from.'));
     await whenLoaded(sync);
     if (!sync.gone) {
       sync.deleteFromServer();
@@ -90,7 +91,7 @@ async function deleteRoom(roomId: string, key: string) {
         const off = sync.onChange(() => sync.gone && done());
         function done() { clearTimeout(t); off(); resolve(); }
       });
-      if (!sync.gone) throw new Error('The server did not confirm the deletion. Try again.');
+      if (!sync.gone) throw new Error(t('The server did not confirm the deletion. Try again.'));
     }
   } finally {
     sync.destroy();
@@ -142,7 +143,7 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
 
   const start = async (occ: string, n: number) => {
     if (!s || !series) return;
-    setBusy('Starting the meeting…');
+    setBusy(t('Starting the meeting…'));
     try {
       await startOccurrence({ doc: s.doc, seriesId, seriesKey, info: series.info, occ, n, me, replace: true });
     } catch (e) {
@@ -170,9 +171,9 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
         {top}
         <div className="page">
           <div className="card stack" style={{ maxWidth: 560, margin: '40px auto' }}>
-            <h2>This meeting series was deleted</h2>
-            <p className="muted">A facilitator deleted it and all its meetings from the server, so they are gone for everyone.</p>
-            <a href="#/">Back to my meetings</a>
+            <h2>{t('This meeting series was deleted')}</h2>
+            <p className="muted">{t('A facilitator deleted it and all its meetings from the server, so they are gone for everyone.')}</p>
+            <a href="#/">{t('Back to my meetings')}</a>
           </div>
         </div>
       </>
@@ -185,15 +186,15 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
         {top}
         <div className="page">
           <div className="card stack" style={{ maxWidth: 560, margin: '40px auto' }}>
-            <h2>{!s?.loaded ? 'Opening the meeting series…' : missing ? 'This meeting series was not found' : 'Nobody with this series is online'}</h2>
-            {s?.loaded && <p className="muted">{missing ? 'Check that you copied the whole link, including the part after #.' : 'Without a meeting server, the person who set up the series has to be online once for others to get it.'}</p>}
+            <h2>{!s?.loaded ? t('Opening the meeting series…') : missing ? t('This meeting series was not found') : t('Nobody with this series is online')}</h2>
+            {s?.loaded && <p className="muted">{missing ? t('Check that you copied the whole link, including the part after #.') : t('Without a meeting server, the person who set up the series has to be online once for others to get it.')}</p>}
           </div>
         </div>
       </>
     );
   }
   if (busy || (!overview && decision && decision.kind !== 'closed')) {
-    return (<>{top}<div className="empty">{busy ?? 'Opening the current meeting…'}</div></>);
+    return (<>{top}<div className="empty">{busy ?? t('Opening the current meeting…')}</div></>);
   }
 
   const { info, occurrences } = series;
@@ -203,6 +204,20 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
   const link = seriesLink(seriesId, seriesKey);
   const period = periodOf(info.cadence);
   const closedNow = decision?.kind === 'closed' ? decision : null;
+  const another: Record<Cadence, string> = {
+    daily: t('Start another meeting today'), weekly: t('Start another meeting this week'), biweekly: t('Start another meeting this week'),
+    monthly: t('Start another meeting this month'), none: t('Start the next meeting'),
+  };
+  const openOrStart: Record<Cadence, string> = {
+    daily: t('Open it to read the minutes, or start another meeting today.'), weekly: t('Open it to read the minutes, or start another meeting this week.'),
+    biweekly: t('Open it to read the minutes, or start another meeting this week.'), monthly: t('Open it to read the minutes, or start another meeting this month.'),
+    none: t('Open it to read the minutes, or start the next meeting.'),
+  };
+  const deletedStart: Record<Cadence, string> = {
+    daily: t('A facilitator deleted it from the server. Start another meeting today.'), weekly: t('A facilitator deleted it from the server. Start another meeting this week.'),
+    biweekly: t('A facilitator deleted it from the server. Start another meeting this week.'), monthly: t('A facilitator deleted it from the server. Start another meeting this month.'),
+    none: t('A facilitator deleted it from the server. Start the next meeting.'),
+  };
   const startNext = () => {
     if (closedNow) return start(closedNow.next, closedNow.n);
     const d = decide(occurrences, period);
@@ -223,20 +238,22 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
             </div>
             {closedNow && (
               <div className="card stack">
-                <h2>{occurrences[closedNow.last]?.title ?? 'The last meeting'} {closedNow.deleted ? 'was deleted' : 'is closed'}</h2>
-                <p className="muted">{closedNow.deleted ? 'A facilitator deleted it from the server. Start' : 'Open it to read the minutes, or start'} {info.cadence === 'none' ? 'the next meeting' : `another meeting ${PERIOD_WORD[info.cadence]}`}.</p>
+                <h2>{closedNow.deleted
+                  ? occurrences[closedNow.last]?.title ? t('{title} was deleted', { title: occurrences[closedNow.last].title }) : t('The last meeting was deleted')
+                  : occurrences[closedNow.last]?.title ? t('{title} is closed', { title: occurrences[closedNow.last].title }) : t('The last meeting is closed')}</h2>
+                <p className="muted">{closedNow.deleted ? deletedStart[info.cadence] : openOrStart[info.cadence]}</p>
                 <div className="row wrap">
-                  {!closedNow.deleted && <button onClick={() => goTo(closedNow.last)}>Open the minutes</button>}
-                  <button className="primary" onClick={startNext}>{info.cadence === 'none' ? 'Start the next meeting' : `Start another meeting ${PERIOD_WORD[info.cadence]}`}</button>
+                  {!closedNow.deleted && <button onClick={() => goTo(closedNow.last)}>{t('Open the minutes')}</button>}
+                  <button className="primary" onClick={startNext}>{another[info.cadence]}</button>
                 </div>
               </div>
             )}
             {!closedNow && (
-              <div className="row"><button className="primary" onClick={startNext}>{decision?.kind === 'open' ? 'Open the current meeting' : 'Start the current meeting'}</button></div>
+              <div className="row"><button className="primary" onClick={startNext}>{decision?.kind === 'open' ? t('Open the current meeting') : t('Start the current meeting')}</button></div>
             )}
             <div className="card flush">
               {past.length === 0 ? (
-                <div className="empty">No meetings in this series yet. The first person to open the series link starts one.</div>
+                <div className="empty">{t('No meetings in this series yet. The first person to open the series link starts one.')}</div>
               ) : (
                 <ul className="list">
                   {past.map((o: Occurrence) => (
@@ -246,7 +263,7 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
                         <span className="faint small">{fmtDate(o.createdAt)}</span>
                       </div>
                       <span className="spacer" />
-                      <span className={`badge ${o.status === 'live' ? 'success' : ''}`}>{o.status === 'live' ? 'Open' : o.status === 'deleted' ? 'Deleted' : 'Closed'}</span>
+                      <span className={`badge ${o.status === 'live' ? 'success' : ''}`}>{o.status === 'live' ? t('Open') : o.status === 'deleted' ? t('Deleted') : t('Closed')}</span>
                     </li>
                   ))}
                 </ul>
@@ -256,40 +273,40 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
           <aside className="stack">
             <SeriesInvite id={seriesId} info={info} link={link} />
             <div className="card stack">
-              <h2>Facilitators</h2>
-              <p className="small muted">They facilitate every new meeting in the series, whoever opens it first. Anyone can step in when none of them is there.</p>
+              <h2>{t('Facilitators')}</h2>
+              <p className="small muted">{t('They facilitate every new meeting in the series, whoever opens it first. Anyone can step in when none of them is there.')}</p>
               <ul className="list">
                 {info.facilitators.map((f) => (
                   <li key={f.id}>
-                    <span>{f.name}{f.id === me.id ? ' (you)' : ''}</span>
+                    <span>{f.id === me.id ? t('{name} (you)', { name: f.name }) : f.name}</span>
                     <span className="spacer" />
                     {isFacilitator && info.facilitators.length > 1 && (
-                      <button className="ghost sm" aria-label={`Remove ${f.name} as facilitator`} onClick={async () => {
-                        if (await ask(`Remove ${f.name} as a facilitator of ${info.name}?`)) ops.removeFacilitator(f.id);
+                      <button className="ghost sm" aria-label={t('Remove {name} as facilitator', { name: f.name })} onClick={async () => {
+                        if (await ask(t('Remove {name} as a facilitator of {series}?', { name: f.name, series: info.name }))) ops.removeFacilitator(f.id);
                       }}>✕</button>
                     )}
                   </li>
                 ))}
               </ul>
-              {!isFacilitator && <button className="sm" onClick={() => ops.addFacilitator({ id: me.id, name: me.name })}>Facilitate this series too</button>}
+              {!isFacilitator && <button className="sm" onClick={() => ops.addFacilitator({ id: me.id, name: me.name })}>{t('Facilitate this series too')}</button>}
             </div>
             {isFacilitator && s.sync.deleteFromServer && (
               <div className="card stack">
-                <h2>On the server</h2>
-                <p className="small muted">The series and its meetings are stored encrypted. The server deletes each one when nobody has changed it for a while. A single meeting can be deleted from its Meeting settings.</p>
+                <h2>{t('On the server')}</h2>
+                <p className="small muted">{t('The series and its meetings are stored encrypted. The server deletes each one when nobody has changed it for a while. A single meeting can be deleted from its Meeting settings.')}</p>
                 <div className="row">
                   <button className="sm danger" onClick={async () => {
-                    if (!(await ask(`Delete ${info.name} and all ${past.length} of its meetings from the server for everyone? It cannot be undone, and the series link stops working. Save any minutes you need first.`))) return;
-                    setBusy('Deleting the series…');
+                    if (!(await ask(tn('Delete {name} and its {n} meeting from the server for everyone? It cannot be undone, and the series link stops working. Save any minutes you need first.', 'Delete {name} and all {n} of its meetings from the server for everyone? It cannot be undone, and the series link stops working. Save any minutes you need first.', past.length, { name: info.name })))) return;
+                    setBusy(t('Deleting the series…'));
                     try {
                       await deleteSeries(seriesId, seriesKey, s, occurrences);
-                      toast(`${info.name} was deleted`);
+                      toast(t('{title} was deleted', { title: info.name }));
                       location.replace('#/');
                     } catch (e) {
                       toastError(e);
                       setBusy(null);
                     }
-                  }}>Delete series from server…</button>
+                  }}>{t('Delete series from server…')}</button>
                 </div>
               </div>
             )}
@@ -304,17 +321,17 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
 export function SeriesInvite({ id, info, link }: { id: string; info: SeriesInfo; link: string }) {
   return (
     <div className="card stack">
-      <h2>Put this in the calendar invite</h2>
-      <p className="small muted">One link for every meeting in the series. It always opens the current meeting, and starts it if nobody has yet.</p>
+      <h2>{t('Put this in the calendar invite')}</h2>
+      <p className="small muted">{t('One link for every meeting in the series. It always opens the current meeting, and starts it if nobody has yet.')}</p>
       <div className="row">
-        <input readOnly value={link} aria-label="Series link" onFocus={(e) => e.target.select()} />
-        <button className="primary" onClick={() => copyText(link, 'Series link copied')}>Copy</button>
+        <input readOnly value={link} aria-label={t('Series link')} onFocus={(e) => e.target.select()} />
+        <button className="primary" onClick={() => copyText(link, t('Series link copied'))}>{t('Copy')}</button>
       </div>
       <div className="row wrap">
-        <button className="sm" onClick={() => copyText(inviteText(info, link), 'Invite text copied. Paste it into the Outlook invite.')}>Copy invite text</button>
-        <button className="sm" onClick={() => downloadText(`${slug(info.name) || 'meeting'}.ics`, seriesIcs(id, info, link), 'text/calendar')}>Download calendar file (.ics)</button>
+        <button className="sm" onClick={() => copyText(inviteText(info, link), t('Invite text copied. Paste it into the Outlook invite.'))}>{t('Copy invite text')}</button>
+        <button className="sm" onClick={() => downloadText(`${slug(info.name) || 'meeting'}.ics`, seriesIcs(id, info, link), 'text/calendar')}>{t('Download calendar file (.ics)')}</button>
       </div>
-      <p className="small muted">Open the .ics file in Outlook, add the people, and send. Everyone on the invite gets the link.</p>
+      <p className="small muted">{t('Open the .ics file in Outlook, add the people, and send. Everyone on the invite gets the link.')}</p>
     </div>
   );
 }
@@ -335,7 +352,7 @@ export function useSeriesTracking(view: View | null, me: Identity) {
   /** The next week's (month's) meeting, made now so people can prepare. */
   const startNext = async () => {
     const series = s && readSeries(s.doc);
-    if (!s || !series || !view) return toastError(new Error('The series is still loading. Try again in a moment.'));
+    if (!s || !series || !view) return toastError(new Error(t('The series is still loading. Try again in a moment.')));
     const next = nextAfter(series.info.cadence, ref.occ, series.occurrences);
     if (next.exists) {
       const room = await occurrenceRoom(ref.key, next.occ);
@@ -346,13 +363,13 @@ export function useSeriesTracking(view: View | null, me: Identity) {
   };
   /** Before this meeting is deleted from the server: tell the series, so its link moves past the meeting. */
   const markDeleted = async () => {
-    if (!s || !readSeries(s.doc)) throw new Error('The series is still loading. Try again in a moment.');
+    if (!s || !readSeries(s.doc)) throw new Error(t('The series is still loading. Try again in a moment.'));
     seriesOps(s.doc).markDeleted(ref.occ);
     await s.sync.flushed?.();
   };
   const series = s ? readSeries(s.doc) : null;
   const next = series ? nextAfter(series.info.cadence, ref.occ, series.occurrences) : null;
-  const nextLabel = !series || !next ? null : series.info.cadence === 'none' ? 'the next meeting' : periodLabel(series.info.cadence, basePeriod(series.info.cadence, next.occ));
+  const nextLabel = !series || !next ? null : series.info.cadence === 'none' ? t('the next meeting') : periodLabel(series.info.cadence, basePeriod(series.info.cadence, next.occ));
   return { link: seriesLink(ref.id, ref.key), overview: `#/s/${ref.id}/${ref.key}/overview`, startNext, markDeleted, nextLabel, nextExists: !!next?.exists };
 }
 

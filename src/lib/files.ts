@@ -1,6 +1,7 @@
 import { toast } from '../components/ui';
 import * as Y from 'yjs';
 import { readMeta } from './model';
+import { t } from './i18n';
 
 // A meeting file holds the whole shared document, so it can be reopened, archived in a
 // shared drive, or used to start the next meeting with open actions carried over.
@@ -39,10 +40,10 @@ export function parseMeetingFile(text: string): MeetingFile {
   try {
     f = JSON.parse(text);
   } catch {
-    throw new Error('This is not a Rondel meeting file');
+    throw new Error(t('This is not a Rondel meeting file'));
   }
   if (f?.format !== 'rondel-meeting' || typeof f.update !== 'string' || typeof f.roomId !== 'string') {
-    throw new Error('This is not a Rondel meeting file');
+    throw new Error(t('This is not a Rondel meeting file'));
   }
   return f as MeetingFile;
 }
@@ -50,7 +51,7 @@ export function parseMeetingFile(text: string): MeetingFile {
 export function docFromFile(f: MeetingFile): Y.Doc {
   const doc = new Y.Doc();
   Y.applyUpdate(doc, fromB64(f.update));
-  if (!readMeta(doc)) throw new Error('The meeting file is empty or damaged');
+  if (!readMeta(doc)) throw new Error(t('The meeting file is empty or damaged'));
   return doc;
 }
 
@@ -66,7 +67,7 @@ export async function downloadText(filename: string, text: string, type = 'text/
     try {
       await downloads.save({ filename, data: new Blob([text], { type }) });
     } catch (e: any) {
-      if (e?.code !== 'declined') toast(`Could not save the file: ${e?.message ?? e}`);
+      if (e?.code !== 'declined') toast(t('Could not save the file: {error}', { error: e?.message ?? e }));
     }
     return;
   }

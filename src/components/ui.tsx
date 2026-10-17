@@ -5,6 +5,7 @@ import { getPrefs, knownPeople, setName, setPrefs, type Identity, type Theme } f
 import { feedbackHref, isLab, labLabel, VERSION } from '../lib/lab';
 import { appName, operator, SOURCE_URL } from '../lib/site';
 import { canInstall, installApp, onInstallable } from '../pwa/register';
+import { getLang, LANGS, locale, setLang, t, tn, type Lang } from '../lib/i18n';
 
 let pushToast: (msg: string) => void = () => {};
 export const toast = (msg: string) => pushToast(msg);
@@ -12,7 +13,7 @@ export const toast = (msg: string) => pushToast(msg);
 export const copyText = (text: string, done: string) =>
   Promise.resolve()
     .then(() => navigator.clipboard.writeText(text))
-    .then(() => toast(done), () => toast('Copying is blocked here. Select the text and copy it yourself.'));
+    .then(() => toast(done), () => toast(t('Copying is blocked here. Select the text and copy it yourself.')));
 export const toastError = (e: unknown) => toast(e instanceof Error ? e.message : String(e));
 export function Toaster() {
   const [msg, setMsg] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export function Modal(props: { title: string; onClose: () => void; children: Rea
         <header>
           <h2>{props.title}</h2>
           <span className="spacer" />
-          <button className="ghost icon" aria-label="Close" onClick={props.onClose}>✕</button>
+          <button className="ghost icon" aria-label={t('Close')} onClick={props.onClose}>✕</button>
         </header>
         <div className="body">{props.children}</div>
       </div>
@@ -76,13 +77,13 @@ export function Dialogs() {
     cur.resolve(v);
   };
   return (
-    <Modal title={cur.input === undefined ? 'Please confirm' : cur.message} onClose={() => done(null)}>
+    <Modal title={cur.input === undefined ? t('Please confirm') : cur.message} onClose={() => done(null)}>
       <form className="stack" onSubmit={(e) => { e.preventDefault(); done(cur.input === undefined ? '' : value); }}>
         {cur.input === undefined ? <p>{cur.message}</p> : <input autoFocus value={value} onChange={(e) => setValue(e.target.value)} aria-label={cur.message} />}
         <div className="row">
           <span className="spacer" />
-          <button type="button" onClick={() => done(null)}>Cancel</button>
-          <button type="submit" className="primary" autoFocus={cur.input === undefined}>OK</button>
+          <button type="button" onClick={() => done(null)}>{t('Cancel')}</button>
+          <button type="submit" className="primary" autoFocus={cur.input === undefined}>{t('OK')}</button>
         </div>
       </form>
     </Modal>
@@ -103,9 +104,9 @@ export function initials(name: string) {
 export function Avatar(props: { id: string; name: string; ready?: boolean; size?: number }) {
   const s = props.size ?? 28;
   return (
-    <span className="avatar" style={{ width: s, height: s, fontSize: s * 0.38 }} title={`${props.name}${props.ready ? ' · ready' : ''}`}>
+    <span className="avatar" style={{ width: s, height: s, fontSize: s * 0.38 }} title={props.ready ? t('{name} · ready', { name: props.name }) : props.name}>
       {initials(props.name || '?')}
-      {props.ready && <span className="ready" aria-label="ready" />}
+      {props.ready && <span className="ready" aria-label={t('ready')} />}
     </span>
   );
 }
@@ -115,7 +116,7 @@ export function PrefsButton({ me, onChange }: { me: Identity; onChange: () => vo
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button className="ghost sm me-button" onClick={() => setOpen(true)} title="Your name and preferences">
+      <button className="ghost sm me-button" onClick={() => setOpen(true)} title={t('Your name and preferences')}>
         <Avatar id={me.id} name={me.name} size={22} /><span className="me-name">{me.name}</span>
       </button>
       {open && <PrefsModal me={me} onClose={() => setOpen(false)} onChange={onChange} />}
@@ -129,53 +130,65 @@ function PrefsModal({ me, onClose, onChange }: { me: Identity; onClose: () => vo
   const [theme, setTheme] = useState<Theme>(prefs.theme);
   const [defaults, setDefaults] = useState(prefs.meetingDefaults);
   const [people, setPeople] = useState(knownPeople().length);
+  const [language, setLanguage] = useState<Lang>(getLang());
   const d = defaults;
   return (
-    <Modal title="Your preferences" onClose={onClose}>
+    <Modal title={t('Your preferences')} onClose={onClose}>
       <form className="col" style={{ gap: 16 }} onSubmit={(e) => {
         e.preventDefault();
         if (name.trim()) setName(name);
         setPrefs({ theme, meetingDefaults: defaults });
         if (people === 0) localStorage.removeItem('rondel:people');
-        toast('Preferences saved in this browser');
+        toast(t('Preferences saved in this browser'));
         onChange();
         onClose();
+        if (language !== getLang()) setLang(language);
       }}>
-        <label className="field">Your name<input required maxLength={60} value={name} onChange={(e) => setNameValue(e.target.value)} /><span className="hint">Shown to others in your meetings. A new name applies to meetings you open from now on.</span></label>
-        <label className="field">Appearance
+        <label className="field">{t('Your name')}<input required maxLength={60} value={name} onChange={(e) => setNameValue(e.target.value)} /><span className="hint">{t('Shown to others in your meetings. A new name applies to meetings you open from now on.')}</span></label>
+        <label className="field">{t('Appearance')}
           <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
-            <option value="system">Same as my device</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
+            <option value="system">{t('Same as my device')}</option>
+            <option value="light">{t('Light')}</option>
+            <option value="dark">{t('Dark')}</option>
+          </select>
+        </label>
+        <label className="field">{t('Language')}
+          <select value={language} onChange={(e) => setLanguage(e.target.value as Lang)}>
+            {LANGS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
           </select>
         </label>
         <div className="col" style={{ gap: 4 }}>
-          <h3>Settings for new meetings</h3>
+          <h3>{t('Settings for new meetings')}</h3>
           {d ? (
             <div className="row wrap small">
-              <span className="muted">{[d.showAuthors === false ? 'Anonymous cards' : d.showAuthors ? 'Card authors shown' : '', d.votesPerUser !== undefined ? `${d.votesPerUser || 'Unlimited'} votes per person` : '', d.votesPerCard !== undefined ? `${d.votesPerCard || 'unlimited'} per card` : '', d.secretVoting ? 'votes hidden until revealed' : ''].filter(Boolean).join(' · ')}</span>
-              <button type="button" className="ghost sm" onClick={() => setDefaults(null)}>Forget</button>
+              <span className="muted">{[
+                d.showAuthors === false ? t('Anonymous cards') : d.showAuthors ? t('Card authors shown') : '',
+                d.votesPerUser !== undefined ? (d.votesPerUser ? tn('{n} vote per person', '{n} votes per person', d.votesPerUser) : t('Unlimited votes per person')) : '',
+                d.votesPerCard !== undefined ? (d.votesPerCard ? t('{n} per card', { n: d.votesPerCard }) : t('unlimited per card')) : '',
+                d.secretVoting ? t('votes hidden until revealed') : '',
+              ].filter(Boolean).join(' · ')}</span>
+              <button type="button" className="ghost sm" onClick={() => setDefaults(null)}>{t('Forget')}</button>
             </div>
           ) : (
-            <span className="small muted">The defaults of each template. To change them, open a meeting's Settings and tick “Use these settings for my new meetings”.</span>
+            <span className="small muted">{t('The defaults of each template. To change them, open a meeting\'s Settings and tick “Use these settings for my new meetings”.')}</span>
           )}
         </div>
         <div className="col" style={{ gap: 4 }}>
-          <h3>People</h3>
+          <h3>{t('People')}</h3>
           <div className="row wrap small">
-            <span className="muted">{people ? `${people} name${people === 1 ? '' : 's'} from your meetings are suggested when you assign actions.` : 'No names remembered.'}</span>
-            {people > 0 && <button type="button" className="ghost sm" onClick={() => setPeople(0)}>Forget</button>}
+            <span className="muted">{people ? tn('{n} name from your meetings is suggested when you assign actions.', '{n} names from your meetings are suggested when you assign actions.', people) : t('No names remembered.')}</span>
+            {people > 0 && <button type="button" className="ghost sm" onClick={() => setPeople(0)}>{t('Forget')}</button>}
           </div>
         </div>
         <div className="col" style={{ gap: 4 }}>
-          <h3>Move to another browser</h3>
+          <h3>{t('Move to another browser')}</h3>
           <div className="row wrap small">
-            <span className="muted">Back up your meetings, series, templates and settings to a file, and restore it elsewhere.</span>
-            <button type="button" className="sm" onClick={() => { onClose(); openBackup(); }}>Back up or restore…</button>
+            <span className="muted">{t('Back up your meetings, series, templates and settings to a file, and restore it elsewhere.')}</span>
+            <button type="button" className="sm" onClick={() => { onClose(); openBackup(); }}>{t('Back up or restore…')}</button>
           </div>
         </div>
-        <p className="small faint">All of this stays in this browser. Nothing is sent to a server.</p>
-        <div className="row"><span className="spacer" /><button type="button" onClick={onClose}>Cancel</button><button className="primary" type="submit">Save</button></div>
+        <p className="small faint">{t('All of this stays in this browser. Nothing is sent to a server.')}</p>
+        <div className="row"><span className="spacer" /><button type="button" onClick={onClose}>{t('Cancel')}</button><button className="primary" type="submit">{t('Save')}</button></div>
       </form>
     </Modal>
   );
@@ -188,12 +201,12 @@ export function TopBar(props: { crumbs?: string[]; right?: ReactNode }) {
         <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3.5" /><circle cx="16" cy="16" r="3.5" fill="currentColor" /></svg>
         {appName()}
       </a>
-      {isLab() && <span className="lab-tag" title="Rondel is being tested. Things may change, and test meetings may be deleted when the test ends.">{labLabel()}</span>}
+      {isLab() && <span className="lab-tag" title={t('Rondel is being tested. Things may change, and test meetings may be deleted when the test ends.')}>{labLabel()}</span>}
       {props.crumbs?.map((c, i) => <span key={i} className="crumbs"><span className="faint">/</span><span>{c}</span></span>)}
       <span className="spacer" />
-      <button className="sm palette-btn" onClick={openPalette} aria-label="Search and commands" title={`Search and commands (${PALETTE_KEY})`}>
+      <button className="sm palette-btn" onClick={openPalette} aria-label={t('Search and commands')} title={t('Search and commands ({key})', { key: PALETTE_KEY })}>
         <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M10.5 10.5 14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
-        <span className="palette-btn-text">Search</span><kbd>{PALETTE_KEY}</kbd>
+        <span className="palette-btn-text">{t('Search')}</span><kbd>{PALETTE_KEY}</kbd>
       </button>
       {props.right}
     </div>
@@ -205,13 +218,14 @@ export function Footer() {
   useEffect(() => onInstallable(() => setInstallable(canInstall())), []);
   const feedback = feedbackHref();
   const op = operator();
+  const [runBefore, runAfter] = t('Run by {name}').split('{name}');
   return (
     <footer className="site-footer">
       {appName()} {VERSION}
-      {op && <> · Run by {op.url ? <a href={op.url} target="_blank" rel="noopener">{op.name}</a> : op.name}</>}
-      {' · '}<a href={SOURCE_URL} target="_blank" rel="noopener">Open source</a> · <a href="#/data">How your data is handled</a>
-      {feedback && <> · <a href={feedback} target="_blank" rel="noopener">Send feedback</a></>}
-      {installable && <> · <a href="#" onClick={(e) => { e.preventDefault(); void installApp(); }}>Install as an app</a></>}
+      {op && <> · {runBefore}{op.url ? <a href={op.url} target="_blank" rel="noopener">{op.name}</a> : op.name}{runAfter}</>}
+      {' · '}<a href={SOURCE_URL} target="_blank" rel="noopener">{t('Open source')}</a> · <a href="#/data">{t('How your data is handled')}</a>
+      {feedback && <> · <a href={feedback} target="_blank" rel="noopener">{t('Send feedback')}</a></>}
+      {installable && <> · <a href="#" onClick={(e) => { e.preventDefault(); void installApp(); }}>{t('Install as an app')}</a></>}
     </footer>
   );
 }
@@ -221,5 +235,6 @@ export function isOverdue(due: string | null, status: string) {
 }
 
 export function fmtDate(iso: string | null | undefined) {
-  return iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  return iso ? new Date(iso).toLocaleDateString(locale(),
+ { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 }

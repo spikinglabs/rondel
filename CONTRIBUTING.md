@@ -39,6 +39,12 @@ Things to keep in mind:
   Change it in the same pull request when your change affects what it says.
 - **Keep it simple.** No accounts, no tracking, no scripts or fonts from other sites.
 
+## Translating
+
+To add a language or improve a translation, see [src/i18n/README.md](src/i18n/README.md).
+`npm run i18n -- new <code> <name> <locale>` creates the file to translate; a half-done translation is fine,
+anything missing shows in English.
+
 ## Signing off your commits
 
 Rondel uses the [Developer Certificate of Origin](https://developercertificate.org/) (DCO): by signing off a

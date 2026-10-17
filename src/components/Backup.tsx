@@ -5,7 +5,11 @@ import { downloadText } from '../lib/files';
 import { listMeetings } from '../lib/store';
 import { listSeries } from '../lib/series';
 
-const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+import { t, tn } from '../lib/i18n';
+
+const meetingsText = (n: number) => tn('{n} meeting', '{n} meetings', n);
+const seriesText = (n: number) => tn('1 series', '{n} series', n);
+const templatesText = (n: number) => tn('{n} template', '{n} templates', n);
 
 /** Move to another browser: download everything Rondel keeps here as one file, or add such a file to this browser. */
 export function BackupModal({ onClose }: { onClose: () => void }) {
@@ -37,49 +41,49 @@ export function BackupModal({ onClose }: { onClose: () => void }) {
   };
 
   if (done) return (
-    <Modal title="Backup restored" onClose={() => location.reload()}>
-      <p>Added {plural(done.meetings, 'meeting')}, {done.series} series and {plural(done.templates, 'template')} to this browser.
-        {done.identity === 'taken' && ' You are now the same person as in the backup, so you keep your facilitator role in its meetings.'}</p>
-      <div className="row"><span className="spacer" /><button className="primary" onClick={() => location.reload()}>Done</button></div>
+    <Modal title={t('Backup restored')} onClose={() => location.reload()}>
+      <p>{t('Added {meetings}, {series} and {templates} to this browser.', { meetings: meetingsText(done.meetings), series: seriesText(done.series), templates: templatesText(done.templates) })}
+        {done.identity === 'taken' && ` ${t('You are now the same person as in the backup, so you keep your facilitator role in its meetings.')}`}</p>
+      <div className="row"><span className="spacer" /><button className="primary" onClick={() => location.reload()}>{t('Done')}</button></div>
     </Modal>
   );
 
   const mismatch = !!pass && pass !== pass2;
   return (
-    <Modal title="Move to another browser" onClose={onClose}>
+    <Modal title={t('Move to another browser')} onClose={onClose}>
       <section className="col" style={{ gap: 10 }}>
-        <h3>Back up this browser</h3>
-        <p className="small muted">One file with your name, preferences, My templates, your {plural(here.meetings, 'meeting')} and {here.series} series with their links, and the copy of each meeting stored here. Restore it in another browser to carry on there.</p>
-        <p className="small warning-note">The file contains the keys to these meetings: anyone who has it can open them, just like with the links. Add a passphrase if you will store or send it.</p>
+        <h3>{t('Back up this browser')}</h3>
+        <p className="small muted">{t('One file with your name, preferences, My templates, your {meetings} and {series} with their links, and the copy of each meeting stored here. Restore it in another browser to carry on there.', { meetings: meetingsText(here.meetings), series: seriesText(here.series) })}</p>
+        <p className="small warning-note">{t('The file contains the keys to these meetings: anyone who has it can open them, just like with the links. Add a passphrase if you will store or send it.')}</p>
         <div className="row wrap">
-          <label className="field" style={{ flex: 1, minWidth: 160 }}>Passphrase (optional)<input type="password" autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} /></label>
-          {pass && <label className="field" style={{ flex: 1, minWidth: 160 }}>Repeat passphrase<input type="password" autoComplete="new-password" value={pass2} onChange={(e) => setPass2(e.target.value)} /></label>}
+          <label className="field" style={{ flex: 1, minWidth: 160 }}>{t('Passphrase (optional)')}<input type="password" autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} /></label>
+          {pass && <label className="field" style={{ flex: 1, minWidth: 160 }}>{t('Repeat passphrase')}<input type="password" autoComplete="new-password" value={pass2} onChange={(e) => setPass2(e.target.value)} /></label>}
         </div>
-        {mismatch && pass2 && <span className="small" style={{ color: 'var(--danger)' }}>The passphrases don't match.</span>}
-        <div className="row"><span className="spacer" /><button className="primary" disabled={busy || mismatch} onClick={download}>Download backup</button></div>
+        {mismatch && pass2 && <span className="small" style={{ color: 'var(--danger)' }}>{t('The passphrases don\'t match.')}</span>}
+        <div className="row"><span className="spacer" /><button className="primary" disabled={busy || mismatch} onClick={download}>{t('Download backup')}</button></div>
       </section>
       <hr className="sep" />
       <section className="col" style={{ gap: 10 }}>
-        <h3>Restore a backup</h3>
-        <p className="small muted">Adds the backup to what this browser already has. Nothing here is removed.</p>
+        <h3>{t('Restore a backup')}</h3>
+        <p className="small muted">{t('Adds the backup to what this browser already has. Nothing here is removed.')}</p>
         <div className="row wrap">
-          <button onClick={() => input.current?.click()}>Choose backup file…</button>
-          <input ref={input} type="file" accept=".json,application/json" hidden aria-label="Backup file" onChange={async (e) => {
+          <button onClick={() => input.current?.click()}>{t('Choose backup file…')}</button>
+          <input ref={input} type="file" accept=".json,application/json" hidden aria-label={t('Backup file')} onChange={async (e) => {
             const f = e.target.files?.[0];
             e.target.value = '';
             if (!f) return;
             try { setFile({ name: f.name, f: parseBackupFile(await f.text()) }); setFilePass(''); } catch (err) { toastError(err); }
           }} />
-          {file && <span className="small muted">{file.name}{file.f.encrypted ? ' · protected' : file.f.data ? ` · ${summaryText(file.f)}` : ''}</span>}
+          {file && <span className="small muted">{file.name}{file.f.encrypted ? ` · ${t('protected')}` : file.f.data ? ` · ${summaryText(file.f)}` : ''}</span>}
         </div>
-        {file?.f.encrypted && <label className="field">Backup passphrase<input type="password" autoComplete="off" value={filePass} onChange={(e) => setFilePass(e.target.value)} /></label>}
+        {file?.f.encrypted && <label className="field">{t('Backup passphrase')}<input type="password" autoComplete="off" value={filePass} onChange={(e) => setFilePass(e.target.value)} /></label>}
         {file && (
           <label className="row small" style={{ gap: 8, alignItems: 'flex-start' }}>
             <input type="checkbox" checked={takeId} onChange={(e) => setTakeId(e.target.checked)} style={{ marginTop: 3 }} />
-            <span>Be the same person as in the backup<span className="muted"> · keeps you facilitator of its meetings.{here.meetings + here.series > 0 ? ' Meetings already in this browser would then see you as someone new.' : ''}</span></span>
+            <span>{t('Be the same person as in the backup')}<span className="muted"> · {t('keeps you facilitator of its meetings.')}{here.meetings + here.series > 0 ? ` ${t('Meetings already in this browser would then see you as someone new.')}` : ''}</span></span>
           </label>
         )}
-        <div className="row"><span className="spacer" /><button className="primary" disabled={!file || busy || (file.f.encrypted && !filePass)} onClick={restore}>Restore</button></div>
+        <div className="row"><span className="spacer" /><button className="primary" disabled={!file || busy || (file.f.encrypted && !filePass)} onClick={restore}>{t('Restore')}</button></div>
       </section>
     </Modal>
   );
@@ -88,5 +92,7 @@ export function BackupModal({ onClose }: { onClose: () => void }) {
 function summaryText(f: BackupFile) {
   if (f.encrypted) return '';
   const s = backupSummary(f.data);
-  return `${plural(s.meetings, 'meeting')}, ${s.series} series, ${plural(s.templates, 'template')}${s.name ? `, from ${s.name}` : ''}`;
+  const vars = { meetings: meetingsText(s.meetings), series: seriesText(s.series), templates: templatesText(s.templates) };
+  return s.name ? t('{meetings}, {series}, {templates}, from {name}', { ...vars, name: s.name }) : t('{meetings}, {series}, {templates}', vars);
+
 }

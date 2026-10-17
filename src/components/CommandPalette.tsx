@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { t } from '../lib/i18n';
 
 /** Something the palette can do. `search` commands are found by typing (cards, ideas, …) and are not listed when the box is empty. */
 export interface Command {
@@ -50,7 +51,8 @@ export function reveal(id: string) {
 export function focusField(label: string) {
   let tries = 0;
   const go = () => {
-    const el = [...document.querySelectorAll<HTMLElement>(`[aria-label="${CSS.escape(label)}"]`)].find((e) => e.offsetParent);
+    // Fields carry their label in the interface language; callers may pass it in English or already translated.
+    const el = [...document.querySelectorAll<HTMLElement>(`[aria-label="${CSS.escape(t(label))}"], [aria-label="${CSS.escape(label)}"]`)].find((e) => e.offsetParent);
     if (!el) { if (tries++ < 20) setTimeout(go, 50); return; }
     el.scrollIntoView({ block: 'center' });
     el.focus();
@@ -128,11 +130,11 @@ function Palette({ onClose }: { onClose: () => void }) {
   let n = -1;
   return (
     <div className="modal-backdrop palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="palette" role="dialog" aria-modal="true" aria-label="Command palette">
-        <input autoFocus value={q} onChange={(e) => { setQ(e.target.value); setSel(0); }} onKeyDown={onKey} placeholder="Search or type a command…"
-          aria-label="Search or type a command" role="combobox" aria-expanded="true" aria-controls="palette-list"
+      <div className="palette" role="dialog" aria-modal="true" aria-label={t('Command palette')}>
+        <input autoFocus value={q} onChange={(e) => { setQ(e.target.value); setSel(0); }} onKeyDown={onKey} placeholder={t('Search or type a command…')}
+          aria-label={t('Search or type a command')} role="combobox" aria-expanded="true" aria-controls="palette-list"
           aria-activedescendant={flat[sel] ? `cmd-${sel}` : undefined} />
-        <ul id="palette-list" role="listbox" ref={listRef} aria-label="Commands">
+        <ul id="palette-list" role="listbox" ref={listRef} aria-label={t('Commands')}>
           {grouped.map((g) => (
             <li key={g.group} role="presentation">
               <div className="palette-group" aria-hidden="true">{g.group}</div>
@@ -150,9 +152,10 @@ function Palette({ onClose }: { onClose: () => void }) {
               </ul>
             </li>
           ))}
-          {flat.length === 0 && <li className="palette-empty">Nothing found for “{q}”.</li>}
+          {flat.length === 0 && <li className="palette-empty">{t('Nothing found for “{query}”.', { query: q })}</li>}
         </ul>
-        <div className="palette-foot faint small">↑↓ to choose · Enter to run · Esc to close</div>
+        <div className="palette-foot faint small">{t('↑↓ to choose · Enter to run · Esc to close')}</div>
+
       </div>
     </div>
   );

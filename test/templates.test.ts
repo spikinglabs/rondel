@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import * as Y from 'yjs';
 import { initMeeting, readView } from '../src/lib/model';
 import { BUILTIN_TEMPLATES, STARTER_YAML, defaultTitle, parseTemplate, templateFromMeeting, templateToYaml } from '../src/lib/templates';
+import { BUILTIN_YAML } from '../src/templates/builtin';
+import { LANGUAGES } from '../src/i18n/languages';
 
 const FULL = `
 name: Sprint retro
@@ -102,3 +104,17 @@ test('organisation templates shipped in deploy/*/templates parse without errors'
     }
   }
 });
+
+for (const lang of LANGUAGES.filter((l) => l.templates)) {
+  test(`the ${lang.label} built-in templates match the English ones except for their texts`, () => {
+    const translated = lang.templates!;
+    assert.equal(translated.length, BUILTIN_YAML.length);
+    BUILTIN_YAML.forEach((en, i) => {
+      const a = parseTemplate(en).template!;
+      const b = parseTemplate(translated[i]).template;
+      assert.ok(b, `${lang.label} template ${a.id} does not parse`);
+      assert.deepEqual([b.id, b.type, b.columns.length, b.settings], [a.id, a.type, a.columns.length, a.settings]);
+      assert.deepEqual(b.agenda.map((x) => [x.durationMin, x.activity]), a.agenda.map((x) => [x.durationMin, x.activity]));
+    });
+  });
+}
