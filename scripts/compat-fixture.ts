@@ -113,6 +113,9 @@ const seriesKey = 'SeriesKeyForCompatTest_0123456789abcdef';
 initSeries(series, { name: 'Team weekly', cadence: 'weekly', template, facilitators: [{ id: ana.id, name: ana.name }], createdBy: ana.id, createdAt: '2026-10-01T09:00:00.000Z', start: '2026-10-05T10:00', durationMin: 45 });
 const so = seriesOps(series);
 so.addOccurrence({ occ: '2026-W41', title: 'Team weekly 2026-W41', status: 'closed', createdAt: '2026-10-05T10:00:00.000Z', closedAt: '2026-10-05T10:45:00.000Z' });
+// A meeting deleted from the server (0.27.0 and later): its room can't be reused.
+so.addOccurrence({ occ: '2026-W40', title: 'Team weekly 2026-W40', status: 'closed', createdAt: '2026-09-28T10:00:00.000Z', closedAt: '2026-09-28T10:45:00.000Z' });
+so.markDeleted('2026-W40');
 so.addOccurrence({ occ: '2026-W42', title: 'Team weekly 2026-W42', status: 'live', createdAt: '2026-10-12T10:00:00.000Z', closedAt: null });
 
 // An encrypted update as the room server stores it, and the link's server proof.

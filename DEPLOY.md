@@ -43,6 +43,7 @@ deploy/acme/
 | `operator.contact` | Optional email address or URL people use to ask about their data. Defaults to `url`. |
 | `operator.hosting` | One or two sentences for the data page saying where the server runs, e.g. "Rondel runs on Example Corp's own servers in Frankfurt." `"cloudflare"` uses the built-in Cloudflare wording. |
 | `operator.retentionDays` | How many days the data page says unchanged meetings are kept. Must match the server's `RETENTION_DAYS`; `0` means kept until deleted. |
+| `language` | The interface language for people who haven't picked one, such as `"de"`. Defaults to the browser's language. Everyone can still change it in the footer. |
 | `lab` | `true` shows a "Lab" tag and a test notice, or a text such as `"Staging"` for the tag. |
 | `robots` | `"noindex"` keeps the site out of search results, e.g. for a staging copy. Leave it out for a public site. Meeting links are never indexed either way: everything after `#` stays in the browser. |
 | `templates` | Extra template files to list. Files in the `templates/` folder are added automatically. |
