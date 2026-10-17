@@ -11,8 +11,8 @@ stores or relays the meeting cannot read it.
 
 | | What you get | How |
 |---|---|---|
-| **Cloudflare** | Static app + one Durable Object per meeting for storage and live sync | `npm run cf:deploy` |
-| **Any Node host or container** | Same, with meetings in one SQLite file | `npm run build && npm start`, or the `Dockerfile` |
+| **Cloudflare** | Static app + one Durable Object per meeting for storage and live sync | `npm run cf:deploy` ([DEPLOY.md](DEPLOY.md)) |
+| **Any Node host or container** | Same, with meetings in one SQLite file | `npm run build && npm start`, or the `Dockerfile` ([DEPLOY.md](DEPLOY.md)) |
 | **Static files only** (GitHub Pages, intranet, SharePoint) | Live meetings browser-to-browser; no storage, so no preparation at different times | Copy `dist/` anywhere |
 | **claude.ai artifact** (test previews) | Same as a server, using the artifact's shared storage and live room; invite links use `#m.<room>.<key>` because claude.ai only passes plain anchors | Publish `dist/` with the `db`, `room` and `downloads` capabilities and set `shareUrl` in `index.html` |
 
@@ -83,13 +83,16 @@ window.RONDEL_CONFIG = {
   relayUrls: null,
   turn: [],
   lab: false,         // true: "Lab" tag in the header and a test notice on the data page
-  feedback: null      // email address or form URL for "Send feedback"; null hides it
+  feedback: null,     // email address or form URL for "Send feedback"; null hides it
+  name: "Rondel",     // the name in the header and browser tab
+  operator: null      // who runs this site, shown in the footer and on the data page (see DEPLOY.md)
 };
 ```
 
-A deployment can keep its own settings in a JSON file and apply them to the build:
-`node scripts/site-config.mjs site/lab.json` (part of `npm run cf:deploy`). The hosted lab site uses
-`site/lab.json`: server-only sync, so it never falls back to public relays, and the lab notice.
+A deployment keeps its own settings in a folder under `deploy/` (a `site.json` and optionally a `templates/`
+folder) and applies them to the build with `node scripts/site-config.mjs deploy/<you>/site.json`.
+[DEPLOY.md](DEPLOY.md) explains every setting. `deploy/example/` is a complete example, and Spiking Labs'
+own hosted site is configured in `deploy/spikinglabs/` the same way.
 
 Node server: `PORT` (8787), `DATA_DIR` (`./data`), `STATIC_DIR` (`./dist`), `RETENTION_DAYS` (90).
 
@@ -106,12 +109,12 @@ Testers use https://rondel.lab.spikinglabs.com, so nothing goes there untested. 
 
 1. Every pull request runs `npm test`, the build and `npm run test:e2e`.
 2. Every merge to `main` deploys to the staging site (https://rondel-staging.spikinglabs.workers.dev, its own
-   meetings and a "Staging" tag) and runs `npm run check:staging` against it.
-3. A version tag (`git tag v0.24.0 && git push origin v0.24.0`, matching `package.json`) does the same, then
-   deploys the lab site and runs `npm run check:live`.
+   meetings and a "Staging" tag) and runs `npm run lab:check-staging` against it.
+3. Publishing a GitHub release with a version tag (for example `v0.26.0` on `main`, matching `package.json`) does
+   the same, then deploys the lab site and runs `npm run lab:check-live`.
 
 The workflow needs the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The same
-`npm run cf:staging` / `cf:deploy` scripts still work by hand.
+`npm run lab:staging` / `lab:deploy` scripts work by hand; they use `deploy/spikinglabs/`.
 
 Costs and limits: rooms use the Durable Object hibernation API, so open but idle tabs cost nothing, and
 heartbeats are answered without waking the room. Each network address may open 300 meeting connections a
@@ -239,7 +242,7 @@ settings:
 
 - **Your own templates:** Design a meeting, or New meeting → Design new… (or Import .yaml…, or Copy on any template). The editor checks the YAML as you type, points to the line of each problem, and previews the result. Saved templates live in your browser; Download .yaml to share one.
 - **Save as template:** in a meeting, Settings → Save as meeting design… turns its board, agenda and settings into YAML.
-- **For everyone in your organisation:** put YAML files next to the app and list them in `RONDEL_CONFIG.templates` in `index.html`, for example `["templates/board-meeting.yaml"]`. They appear under "From your organisation".
+- **For everyone in your organisation:** put YAML files in a `templates/` folder next to your `site.json` (see [DEPLOY.md](DEPLOY.md)); `scripts/site-config.mjs` copies them next to the app and lists them in `RONDEL_CONFIG.templates`. You can also list files yourself, for example `["templates/board-meeting.yaml"]`. They appear under "From your organisation".
 - A meeting keeps a copy of its template, so "Start the next meeting" works for everyone in it, even if the template was only in one person's browser.
 
 ## Licence

@@ -3,6 +3,7 @@ import { openPalette, PALETTE_KEY } from './CommandPalette';
 import { openBackup } from '../pages/commands';
 import { getPrefs, knownPeople, setName, setPrefs, type Identity, type Theme } from '../lib/store';
 import { feedbackHref, isLab, labLabel, VERSION } from '../lib/lab';
+import { appName, operator, SOURCE_URL } from '../lib/site';
 
 let pushToast: (msg: string) => void = () => {};
 export const toast = (msg: string) => pushToast(msg);
@@ -184,7 +185,7 @@ export function TopBar(props: { crumbs?: string[]; right?: ReactNode }) {
     <div className="topbar">
       <a className="brand" href="#/">
         <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3.5" /><circle cx="16" cy="16" r="3.5" fill="currentColor" /></svg>
-        Rondel
+        {appName()}
       </a>
       {isLab() && <span className="lab-tag" title="Rondel is being tested. Things may change, and test meetings may be deleted when the test ends.">{labLabel()}</span>}
       {props.crumbs?.map((c, i) => <span key={i} className="crumbs"><span className="faint">/</span><span>{c}</span></span>)}
@@ -200,9 +201,12 @@ export function TopBar(props: { crumbs?: string[]; right?: ReactNode }) {
 
 export function Footer() {
   const feedback = feedbackHref();
+  const op = operator();
   return (
     <footer className="site-footer">
-      Rondel {VERSION} · Designed by <a href="https://spikinglabs.com" target="_blank" rel="noopener">Spiking Labs</a> · <a href="#/data">How your data is handled</a>
+      {appName()} {VERSION}
+      {op && <> · Run by {op.url ? <a href={op.url} target="_blank" rel="noopener">{op.name}</a> : op.name}</>}
+      {' · '}<a href={SOURCE_URL} target="_blank" rel="noopener">Open source</a> · <a href="#/data">How your data is handled</a>
       {feedback && <> · <a href={feedback} target="_blank" rel="noopener">Send feedback</a></>}
     </footer>
   );

@@ -15,10 +15,27 @@ export interface RondelConfig {
   lab?: boolean | string;
   /** Where "Send feedback" goes: an email address or a web address (a form). Hidden when empty. */
   feedback?: string | null;
+  /** The product name in the header and the browser tab, if this installation uses its own name. */
+  name?: string;
+  /** Who runs this installation, shown in the footer and on the data page. */
+  operator?: Operator | null;
   // Peer-to-peer settings
   strategy?: 'nostr' | 'torrent';
   relayUrls?: string[] | null;
   turn?: RTCIceServer[];
+}
+
+export interface Operator {
+  /** Organisation name, e.g. "Example Corp IT". */
+  name: string;
+  /** Their web site, linked from the name. */
+  url?: string;
+  /** Where people ask for a meeting to be deleted: an email address or a web address. Defaults to url. */
+  contact?: string;
+  /** "cloudflare" for the standard Cloudflare text on the data page, or your own sentence about where it is hosted. */
+  hosting?: string;
+  /** Days without changes before the server deletes a meeting; match the server's RETENTION_DAYS. */
+  retentionDays?: number;
 }
 
 declare global {

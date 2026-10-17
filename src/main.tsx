@@ -11,6 +11,7 @@ import { SeriesPage } from './pages/Series';
 import { DataPage } from './pages/DataPage';
 import { CrashTest, ErrorScreen } from './components/ErrorScreen';
 import { applyTheme, getIdentity, type Identity } from './lib/store';
+import { appName } from './lib/site';
 
 applyTheme();
 
@@ -46,6 +47,8 @@ function App() {
   if (s) return <SeriesPage key={hash} seriesId={s[1]} seriesKey={s[2]} overview={!!s[3]} me={me} onRename={() => setMe(getIdentity())} />;
   return <HomePage me={me} onRename={() => setMe(getIdentity())} />;
 }
+
+document.title = appName();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

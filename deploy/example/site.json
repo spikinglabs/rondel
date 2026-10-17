@@ -1,0 +1,12 @@
+{
+  "name": "Rondel",
+  "sync": "server",
+  "feedback": null,
+  "operator": {
+    "name": "Example Corp IT",
+    "url": "https://intranet.example.com/it",
+    "contact": "it-help@example.com",
+    "hosting": "Rondel runs on Example Corp's own servers in Frankfurt.",
+    "retentionDays": 90
+  }
+}

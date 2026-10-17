@@ -1,0 +1,17 @@
+# Rondel with your settings and templates, on any machine with Docker:
+#   docker compose -f deploy/example/docker-compose.yml up -d
+# then open http://localhost:8787. Put it behind your usual HTTPS reverse proxy for real use.
+services:
+  rondel:
+    build: ../..
+    ports:
+      - "8787:8787"
+    environment:
+      SITE_CONFIG: /site/site.json   # this folder's settings and templates/
+      RETENTION_DAYS: "90"           # match operator.retentionDays in site.json
+    volumes:
+      - ./:/site:ro
+      - rondel-data:/data
+    restart: unless-stopped
+volumes:
+  rondel-data:

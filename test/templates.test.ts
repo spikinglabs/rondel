@@ -89,3 +89,16 @@ test('a meeting made from a template gets its title, settings, owners and notes'
   assert.deepEqual(saved.agenda.map((a) => a.title), ['Review last actions', 'Board']);
   assert.ok(parseTemplate(templateToYaml(saved)).template);
 });
+
+test('organisation templates shipped in deploy/*/templates parse without errors', async () => {
+  const { readdirSync, readFileSync, existsSync } = await import('node:fs');
+  for (const site of readdirSync('deploy')) {
+    const dir = `deploy/${site}/templates`;
+    if (!existsSync(dir)) continue;
+    for (const f of readdirSync(dir).filter((f) => /\.ya?ml$/.test(f))) {
+      const { template, errors } = parseTemplate(readFileSync(`${dir}/${f}`, 'utf8'), 'org-');
+      assert.deepEqual(errors, [], `${dir}/${f}`);
+      assert.ok(template, `${dir}/${f}`);
+    }
+  }
+});
