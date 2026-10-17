@@ -7,7 +7,7 @@ import { BUILTIN_TEMPLATES } from '../src/lib/templates';
 
 const builtin = (id: string) => BUILTIN_TEMPLATES.find((t) => t.template.id === id)!.template;
 import { LimitError, meetingOps } from '../src/lib/ops';
-import { minutesMarkdown } from '../src/lib/minutes';
+import { actionsCsv, minutesMarkdown } from '../src/lib/minutes';
 import { docFromFile, exportMeeting, parseMeetingFile } from '../src/lib/files';
 
 const me = { id: 'u1', name: 'Ana' };
@@ -185,4 +185,16 @@ test('two people opening the same topic at once type into the same notes', () =>
   const text = a.getMap<Y.Text>('notes').get(id)!.toString();
   assert.equal(text, b.getMap<Y.Text>('notes').get(id)!.toString());
   assert.ok(text.includes('from Ana.') && text.includes('from Ben.'), text);
+});
+
+test('actions export as CSV that Excel and Jira can read', () => {
+  const { doc, ops } = retro();
+  ops.addAction({ text: 'Fix the "flaky" test, then rerun', owner: 'Ben', due: '2026-10-30' });
+  ops.addAction({ text: 'Line one\nline two; with semicolon' });
+  const csv = actionsCsv(readView(doc)!);
+  const lines = csv.split('\r\n');
+  assert.equal(lines[0], '﻿Action,Owner,Due,Status,Meeting,Created');
+  assert.match(lines[1], /^"Fix the ""flaky"" test, then rerun",Ben,2026-10-30,Open,Sprint 12 retro,\d{4}-\d\d-\d\d$/);
+  assert.match(lines[2], /^"Line one line two; with semicolon",,,Open,Sprint 12 retro,/);
+  assert.equal(lines.at(-1), '');
 });

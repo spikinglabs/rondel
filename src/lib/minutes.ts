@@ -82,3 +82,14 @@ function ideaLines(view: View, itemId: string | null): string[] {
     return `- ${esc(i.text)}${n ? ` — ${n} dot${n === 1 ? '' : 's'}` : ''}${i.picked === 'action' ? ' → action' : i.picked === 'agenda' ? ' → agenda' : ''}`;
   })];
 }
+
+/** Action items as CSV for Excel, Jira, Planner or Azure DevOps import. Starts with a BOM so Excel reads UTF-8. */
+export function actionsCsv(view: View): string {
+  const q = (s: string) => (/[",\r\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+  const status = { open: 'Open', done: 'Done', dropped: 'Dropped' } as Record<string, string>;
+  const rows = [
+    ['Action', 'Owner', 'Due', 'Status', 'Meeting', 'Created'],
+    ...view.actions.map((a) => [esc(a.text), a.owner, a.due ?? '', status[a.status] ?? a.status, a.carriedFrom ?? view.meta.title, a.createdAt.slice(0, 10)]),
+  ];
+  return '﻿' + rows.map((r) => r.map(q).join(',')).join('\r\n') + '\r\n';
+}

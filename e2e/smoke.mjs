@@ -131,6 +131,8 @@ try {
   await ana.getByRole('button', { name: 'Close meeting' }).click();
   await ana.getByRole('button', { name: 'OK' }).click();
   await ben.getByText('This meeting is closed.').waitFor({ timeout: 10000 });
+  // Stand in for the folder picker with the browser's private file system, which has the same API.
+  await ana.evaluate(() => { window.showDirectoryPicker = () => navigator.storage.getDirectory(); });
   await ana.getByRole('button', { name: 'Minutes', exact: true }).first().click();
   const [minutesDl] = await Promise.all([ana.waitForEvent('download'), ana.getByRole('button', { name: 'Download .md' }).click()]);
   const minutes = fs.readFileSync(await minutesDl.path(), 'utf8');
@@ -138,6 +140,14 @@ try {
     assert(minutes.includes(s), `minutes include "${s}"`);
   }
   fs.writeFileSync(`${shots}/minutes.md`, minutes);
+  await ana.getByRole('button', { name: 'Save to folder…' }).click();
+  await ana.getByText(/^Saved .*-sprint-12-retro-minutes\.md in /).waitFor();
+  await ana.getByRole('button', { name: 'Change folder' }).waitFor();
+  const saved = await ana.evaluate(async () => { const dir = await navigator.storage.getDirectory(); for await (const [name, h] of dir.entries()) if (name.endsWith('-minutes.md')) return (await h.getFile()).text(); return ''; });
+  assert(saved === minutes, 'minutes saved into the chosen folder');
+  const [csvDl] = await Promise.all([ana.waitForEvent('download'), ana.getByRole('button', { name: 'Actions as CSV' }).click()]);
+  const csv = fs.readFileSync(await csvDl.path(), 'utf8');
+  assert(csvDl.suggestedFilename().endsWith('-actions.csv') && csv.startsWith('\uFEFFAction,Owner,Due,Status,Meeting,Created') && csv.includes('Add a deploy freeze check to CI,Ben,') && csv.includes('Share retro notes with the wider team,,,Done,Sprint 12 retro'), `actions CSV: ${csv}`);
   // The minutes view copies formatted HTML for email, with a real table for the actions.
   await ana.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await ana.locator('.minutes-view table').waitFor();
