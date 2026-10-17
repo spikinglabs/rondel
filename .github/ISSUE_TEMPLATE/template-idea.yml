@@ -1,0 +1,17 @@
+name: Meeting template idea
+description: Suggest a built-in meeting template, or share one that works for your team.
+labels: [template]
+body:
+  - type: textarea
+    id: meeting
+    attributes:
+      label: What the meeting is for
+      description: Who meets, how often, and what they should leave with.
+    validations:
+      required: true
+  - type: textarea
+    id: yaml
+    attributes:
+      label: The template, if you have one
+      description: Download .yaml in the meeting designer and paste it here. TEMPLATES.md describes the format.
+      render: yaml

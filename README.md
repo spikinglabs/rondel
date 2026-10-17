@@ -124,7 +124,7 @@ Monitoring: `node scripts/uptime.mjs <site>` checks the app page, `api/health` a
 `Uptime` GitHub workflow runs it against the lab site every 15 minutes; a failed run
 emails the repository's notified people. `#/crash-test` shows the error screen on purpose, to check it on a live site.
 
-Changes go in through pull requests to https://github.com/spikinglabs/rondel; nobody pushes to `main` directly.
+Changes go in through pull requests to https://github.com/spikinglabs/rondel; nobody pushes to `main` directly. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose one, and [SECURITY.md](SECURITY.md) for reporting security problems.
 
 ## Development
 
