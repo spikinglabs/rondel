@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import type * as Y from 'yjs';
+import * as Y from 'yjs';
 import { fillTitle, type View } from '../lib/model';
-import { openDoc, type Identity } from '../lib/store';
+import { forgetMeeting, openDoc, type Identity } from '../lib/store';
 import { createSync, type Sync } from '../lib/sync';
 import { queueSeriesMeeting } from '../lib/useMeeting';
 import { downloadText, slug } from '../lib/files';
 import {
   CADENCE_SHORT, PERIOD_WORD, basePeriod, decide, initSeries, inviteText, nextAfter, occurrenceRoom, periodLabel, periodOf, readSeries,
-  seriesIcs, seriesLink, seriesOps, upsertSeries, whenLoaded, type Occurrence, type SeriesInfo,
+  forgetSeries, seriesIcs, seriesLink, seriesOps, upsertSeries, whenLoaded, type Occurrence, type SeriesInfo,
 } from '../lib/series';
-import { PrefsButton, TopBar, ask, copyText, fmtDate, toastError } from '../components/ui';
+import { PrefsButton, TopBar, ask, copyText, fmtDate, toast, toastError } from '../components/ui';
 
 /** Series created in this browser, to write into their documents once storage has loaded. */
 const pendingSeries = new Map<string, SeriesInfo>();
@@ -76,6 +76,44 @@ async function startOccurrence(o: { doc: Y.Doc; seriesId: string; seriesKey: str
   else location.hash = hash;
 }
 
+/** Delete one meeting room from the server without opening the meeting: connect, prove the link, delete. */
+async function deleteRoom(roomId: string, key: string) {
+  const doc = new Y.Doc();
+  const sync = await createSync(doc, roomId, key);
+  try {
+    if (!sync.deleteFromServer) throw new Error('There is no meeting server to delete from.');
+    await whenLoaded(sync);
+    if (!sync.gone) {
+      sync.deleteFromServer();
+      await new Promise<void>((resolve) => {
+        const t = setTimeout(done, 5000);
+        const off = sync.onChange(() => sync.gone && done());
+        function done() { clearTimeout(t); off(); resolve(); }
+      });
+      if (!sync.gone) throw new Error('The server did not confirm the deletion. Try again.');
+    }
+  } finally {
+    sync.destroy();
+    doc.destroy();
+  }
+  await forgetMeeting(roomId);
+}
+
+/** Every meeting of the series, then the series itself, from the server and from this browser. */
+async function deleteSeries(seriesId: string, seriesKey: string, s: { doc: Y.Doc; sync: Sync }, occurrences: Record<string, Occurrence>) {
+  const ops = seriesOps(s.doc);
+  for (const o of Object.values(occurrences)) {
+    if (o.status === 'deleted') continue;
+    const room = await occurrenceRoom(seriesKey, o.occ);
+    await deleteRoom(room.roomId, room.key);
+    ops.markDeleted(o.occ);
+  }
+  await s.sync.flushed?.();
+  s.sync.deleteFromServer?.();
+  forgetSeries(seriesId);
+  await forgetMeeting(seriesId);
+}
+
 /**
  * The series link. Normally it goes straight on to the current meeting, creating it if this period has none
  * yet. With `overview` (or when this period's meeting is closed) it shows the series instead.
@@ -89,6 +127,13 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
   useEffect(() => {
     if (series) upsertSeries({ id: seriesId, key: seriesKey, name: series.info.name, cadence: series.info.cadence, updatedAt: new Date().toISOString() });
   }, [series?.info.name]);
+
+  // Deleted by a facilitator: forget it here too.
+  useEffect(() => {
+    if (!s?.sync.gone) return;
+    forgetSeries(seriesId);
+    void forgetMeeting(seriesId);
+  }, [s?.sync.gone]);
 
   const goTo = async (occ: string) => {
     const room = await occurrenceRoom(seriesKey, occ);
@@ -119,6 +164,20 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
   }, [overview, s?.loaded, decision?.kind]);
 
   const top = <TopBar crumbs={series ? [series.info.name] : []} right={<PrefsButton me={me} onChange={onRename} />} />;
+  if (s?.sync.gone) {
+    return (
+      <>
+        {top}
+        <div className="page">
+          <div className="card stack" style={{ maxWidth: 560, margin: '40px auto' }}>
+            <h2>This meeting series was deleted</h2>
+            <p className="muted">A facilitator deleted it and all its meetings from the server, so they are gone for everyone.</p>
+            <a href="#/">Back to my meetings</a>
+          </div>
+        </div>
+      </>
+    );
+  }
   if (!s || !series) {
     const missing = s?.loaded && s.sync.mode === 'server';
     return (
@@ -164,10 +223,10 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
             </div>
             {closedNow && (
               <div className="card stack">
-                <h2>{occurrences[closedNow.last]?.title ?? 'The last meeting'} is closed</h2>
-                <p className="muted">Open it to read the minutes, or start {info.cadence === 'none' ? 'the next meeting' : `another meeting ${PERIOD_WORD[info.cadence]}`}.</p>
+                <h2>{occurrences[closedNow.last]?.title ?? 'The last meeting'} {closedNow.deleted ? 'was deleted' : 'is closed'}</h2>
+                <p className="muted">{closedNow.deleted ? 'A facilitator deleted it from the server. Start' : 'Open it to read the minutes, or start'} {info.cadence === 'none' ? 'the next meeting' : `another meeting ${PERIOD_WORD[info.cadence]}`}.</p>
                 <div className="row wrap">
-                  <button onClick={() => goTo(closedNow.last)}>Open the minutes</button>
+                  {!closedNow.deleted && <button onClick={() => goTo(closedNow.last)}>Open the minutes</button>}
                   <button className="primary" onClick={startNext}>{info.cadence === 'none' ? 'Start the next meeting' : `Start another meeting ${PERIOD_WORD[info.cadence]}`}</button>
                 </div>
               </div>
@@ -181,13 +240,13 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
               ) : (
                 <ul className="list">
                   {past.map((o: Occurrence) => (
-                    <li key={o.occ} className="link" onClick={() => goTo(o.occ)}>
+                    <li key={o.occ} className={o.status === 'deleted' ? '' : 'link'} onClick={o.status === 'deleted' ? undefined : () => goTo(o.occ)}>
                       <div className="col" style={{ gap: 2, minWidth: 0 }}>
-                        <span>{o.title}</span>
+                        <span className={o.status === 'deleted' ? 'faint' : ''}>{o.title}</span>
                         <span className="faint small">{fmtDate(o.createdAt)}</span>
                       </div>
                       <span className="spacer" />
-                      <span className={`badge ${o.status === 'live' ? 'success' : ''}`}>{o.status === 'live' ? 'Open' : 'Closed'}</span>
+                      <span className={`badge ${o.status === 'live' ? 'success' : ''}`}>{o.status === 'live' ? 'Open' : o.status === 'deleted' ? 'Deleted' : 'Closed'}</span>
                     </li>
                   ))}
                 </ul>
@@ -214,6 +273,26 @@ export function SeriesPage({ seriesId, seriesKey, me, overview, onRename }: { se
               </ul>
               {!isFacilitator && <button className="sm" onClick={() => ops.addFacilitator({ id: me.id, name: me.name })}>Facilitate this series too</button>}
             </div>
+            {isFacilitator && s.sync.deleteFromServer && (
+              <div className="card stack">
+                <h2>On the server</h2>
+                <p className="small muted">The series and its meetings are stored encrypted. The server deletes each one when nobody has changed it for a while. A single meeting can be deleted from its Meeting settings.</p>
+                <div className="row">
+                  <button className="sm danger" onClick={async () => {
+                    if (!(await ask(`Delete ${info.name} and all ${past.length} of its meetings from the server for everyone? It cannot be undone, and the series link stops working. Save any minutes you need first.`))) return;
+                    setBusy('Deleting the series…');
+                    try {
+                      await deleteSeries(seriesId, seriesKey, s, occurrences);
+                      toast(`${info.name} was deleted`);
+                      location.replace('#/');
+                    } catch (e) {
+                      toastError(e);
+                      setBusy(null);
+                    }
+                  }}>Delete series from server…</button>
+                </div>
+              </div>
+            )}
           </aside>
         </div>
       </div>
@@ -265,9 +344,15 @@ export function useSeriesTracking(view: View | null, me: Identity) {
     }
     await startOccurrence({ doc: s.doc, seriesId: ref.id, seriesKey: ref.key, info: series.info, occ: next.occ, n: next.n, me, replace: false }).catch(toastError);
   };
+  /** Before this meeting is deleted from the server: tell the series, so its link moves past the meeting. */
+  const markDeleted = async () => {
+    if (!s || !readSeries(s.doc)) throw new Error('The series is still loading. Try again in a moment.');
+    seriesOps(s.doc).markDeleted(ref.occ);
+    await s.sync.flushed?.();
+  };
   const series = s ? readSeries(s.doc) : null;
   const next = series ? nextAfter(series.info.cadence, ref.occ, series.occurrences) : null;
   const nextLabel = !series || !next ? null : series.info.cadence === 'none' ? 'the next meeting' : periodLabel(series.info.cadence, basePeriod(series.info.cadence, next.occ));
-  return { link: seriesLink(ref.id, ref.key), overview: `#/s/${ref.id}/${ref.key}/overview`, startNext, nextLabel, nextExists: !!next?.exists };
+  return { link: seriesLink(ref.id, ref.key), overview: `#/s/${ref.id}/${ref.key}/overview`, startNext, markDeleted, nextLabel, nextExists: !!next?.exists };
 }
 

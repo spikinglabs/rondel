@@ -123,6 +123,20 @@ try {
   await cleo.waitForURL(prepared, { timeout: 10000 });
   ok('Cleo started next week’s meeting early; the series link still opens this week’s, and “Open next occurrence” returns to it');
 
+  // ------------------------------------------------------------- a facilitator deletes one series meeting
+  await ben.goto(week1b);
+  await ben.getByRole('heading', { name: /\(2\)$/ }).waitFor({ timeout: 15000 });
+  await ben.getByRole('button', { name: 'Settings' }).click();
+  await ben.getByRole('button', { name: 'Delete from server…' }).click();
+  await ben.getByRole('button', { name: 'OK' }).click();
+  await ben.getByRole('heading', { name: 'This meeting was deleted' }).waitFor({ timeout: 15000 });
+  await cleo.goto(url);
+  await cleo.goto(link);
+  await cleo.getByRole('heading', { name: /\(2\) was deleted$/ }).waitFor({ timeout: 15000 });
+  assert(!(await cleo.getByRole('button', { name: 'Open the minutes' }).count()), 'a deleted meeting has no minutes to open');
+  await cleo.getByText('Deleted', { exact: true }).waitFor();
+  ok('Ben deleted the second meeting from the server; the series link says so and offers another meeting this week');
+
 
   // ------------------------------------------------------------- two people open a fresh series at the same moment
   const link2 = await createSeries(ana, /^Daily stand-up/, 'Stand-up', 'Daily');
@@ -133,6 +147,20 @@ try {
   const counts = await Promise.all([ben, cleo].map((p) => p.locator('.agenda-item, [data-agenda-item]').count()));
   assert(counts.every((n) => n === 2), `expected the stand-up's 2 agenda items once, got ${counts.join('/')}`);
   ok('Ben and Cleo opened a new series at the same moment and share one meeting with one agenda');
+
+  // ------------------------------------------------------------- the series facilitator deletes the whole series
+  const standup = ben.url();
+  await ana.goto(link2.replace(/\/?$/, '') + '/overview');
+  await ana.getByRole('button', { name: 'Delete series from server…' }).click();
+  await ana.getByRole('button', { name: 'OK' }).click();
+  await ana.waitForURL(/#\/$/, { timeout: 30000 });
+  assert(!(await ana.locator('.page').getByText(/^Stand-up/).count()), 'the deleted series is still listed on Ana’s home page');
+  await ben.getByRole('heading', { name: 'This meeting was deleted' }).waitFor({ timeout: 15000 });
+  await cleo.goto(url);
+  await cleo.goto(link2);
+  await cleo.getByRole('heading', { name: 'This meeting series was deleted' }).waitFor({ timeout: 15000 });
+  assert(standup.includes('#/m/'), 'Ben was not in the stand-up meeting');
+  ok('Ana deleted the stand-up series: its meeting closed for Ben, and the series link now says it was deleted');
 
   assert(errors.length === 0, `page errors:\n${errors.join('\n')}`);
   console.log('All series checks passed');

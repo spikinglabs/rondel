@@ -34,7 +34,8 @@ export interface SeriesInfo {
 export interface Occurrence {
   occ: string;
   title: string;
-  status: 'live' | 'closed';
+  /** deleted: removed from the server by a facilitator; its room can't be used again. */
+  status: 'live' | 'closed' | 'deleted';
   createdAt: string;
   closedAt: string | null;
 }
@@ -135,7 +136,7 @@ export function periodLabel(cadence: Cadence, period: string): string {
 export type Decision =
   | { kind: 'open'; occ: string }
   | { kind: 'create'; occ: string; n: number }
-  | { kind: 'closed'; last: string; next: string; n: number };
+  | { kind: 'closed'; last: string; next: string; n: number; deleted: boolean };
 
 /**
  * Which meeting the series link should open now: the first meeting of this period that is still open;
@@ -144,10 +145,14 @@ export type Decision =
  */
 export function decide(occurrences: Record<string, Occurrence>, period: string): Decision {
   let n = 1;
-  while (occurrences[occName(period, n)]?.status === 'closed') n++;
+  const ended = (o?: Occurrence) => o?.status === 'closed' || o?.status === 'deleted';
+  while (ended(occurrences[occName(period, n)])) n++;
   const occ = occName(period, n);
   if (occurrences[occ]) return { kind: 'open', occ };
-  if (n > 1) return { kind: 'closed', last: occName(period, n - 1), next: occ, n };
+  if (n > 1) {
+    const last = occName(period, n - 1);
+    return { kind: 'closed', last, next: occ, n, deleted: occurrences[last].status === 'deleted' };
+  }
   return { kind: 'create', occ, n };
 }
 
@@ -208,8 +213,14 @@ export function seriesOps(doc: Y.Doc) {
     /** Keep a meeting's entry in step with the meeting itself (title, open or closed). */
     syncOccurrence: (occ: string, p: Pick<Occurrence, 'title' | 'status' | 'closedAt'>, createdAt: string) => {
       const cur = occurrences.get(occ);
+      if (cur?.status === 'deleted') return;
       if (cur && cur.title === p.title && cur.status === p.status && cur.closedAt === p.closedAt) return;
       occurrences.set(occ, { occ, createdAt: cur?.createdAt ?? createdAt, ...p });
+    },
+    /** Before deleting a meeting from the server: its room can't be reused, so the series link moves past it. */
+    markDeleted: (occ: string) => {
+      const cur = occurrences.get(occ);
+      if (cur) occurrences.set(occ, { ...cur, status: 'deleted' });
     },
     addFacilitator: (f: Facilitator) => info.set('facilitators', [...facilitators().filter((x) => x.id !== f.id), f]),
     removeFacilitator: (id: string) => info.set('facilitators', facilitators().filter((x) => x.id !== id)),

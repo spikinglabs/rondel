@@ -5,7 +5,7 @@ import * as Y from 'yjs';
 import { initMeeting, readView } from '../src/lib/model';
 import { BUILTIN_TEMPLATES } from '../src/lib/templates';
 import { meetingOps } from '../src/lib/ops';
-import { basePeriod, nextAfter, nextPeriod, periodLabel, decide, initSeries, isoWeek, occName, occurrenceRoom, periodOf, readSeries, seriesIcs, seriesOps, type Occurrence, type SeriesInfo } from '../src/lib/series';
+import { basePeriod, nextAfter, nextPeriod, periodLabel, decide, initSeries, isoWeek, occName, occurrenceRoom, periodOf, readSeries, seriesIcs, seriesMaps, seriesOps, type Occurrence, type SeriesInfo } from '../src/lib/series';
 
 const template = BUILTIN_TEMPLATES.find((t) => t.template.id === 'start-stop-continue')!.template;
 const occ = (o: string, status: Occurrence['status'], createdAt: string): Occurrence => ({ occ: o, title: o, status, createdAt, closedAt: status === 'closed' ? createdAt : null });
@@ -29,10 +29,23 @@ test('the series link opens, creates, or offers another meeting', () => {
   const live = { ...week41, '2026-W42': occ('2026-W42', 'live', '2026-10-15T10:00:00Z') };
   assert.deepEqual(decide(live, '2026-W42'), { kind: 'open', occ: '2026-W42' });
   const closed = { ...week41, '2026-W42': occ('2026-W42', 'closed', '2026-10-15T10:00:00Z') };
-  assert.deepEqual(decide(closed, '2026-W42'), { kind: 'closed', last: '2026-W42', next: '2026-W42-2', n: 2 });
+  assert.deepEqual(decide(closed, '2026-W42'), { kind: 'closed', last: '2026-W42', next: '2026-W42-2', n: 2, deleted: false });
   const second = { ...closed, '2026-W42-2': occ('2026-W42-2', 'live', '2026-10-16T10:00:00Z') };
   assert.deepEqual(decide(second, '2026-W42'), { kind: 'open', occ: '2026-W42-2' });
   assert.equal(occName('all', 3), 'all-3');
+  // A deleted meeting's room can't be used again: the link moves past it like a closed one.
+  const deleted = { ...week41, '2026-W42': occ('2026-W42', 'deleted', '2026-10-15T10:00:00Z') };
+  assert.deepEqual(decide(deleted, '2026-W42'), { kind: 'closed', last: '2026-W42', next: '2026-W42-2', n: 2, deleted: true });
+  assert.deepEqual(decide({ ...deleted, '2026-W42-2': occ('2026-W42-2', 'live', '2026-10-16T10:00:00Z') }, '2026-W42'), { kind: 'open', occ: '2026-W42-2' });
+});
+
+test('a deleted series meeting stays deleted when its open meeting page syncs again', () => {
+  const doc = new Y.Doc();
+  const ops = seriesOps(doc);
+  ops.addOccurrence(occ('2026-W42', 'live', '2026-10-15T10:00:00Z'));
+  ops.markDeleted('2026-W42');
+  ops.syncOccurrence('2026-W42', { title: 'Renamed', status: 'live', closedAt: null }, '2026-10-15T10:00:00Z');
+  assert.equal(seriesMaps(doc).occurrences.get('2026-W42')!.status, 'deleted');
 });
 
 test('everyone with the series key derives the same room; other keys and weeks do not', async () => {

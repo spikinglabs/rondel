@@ -235,7 +235,8 @@ export function MeetingPage({ roomId, roomKey, me, onRename }: { roomId: string;
       {minutesOpen && <MinutesModal markdown={minutesMarkdown(doc, view, names)} title={meta.title} fileName={`${(meta.createdAt ?? '').slice(0, 10)}-${slug(meta.title)}-minutes.md`.replace(/^-/, '')} actionsCsv={view.actions.length ? actionsCsv(view) : undefined} onClose={() => setMinutesOpen(false)} />}
       {shareOpen && <ShareModal link={meetingLink(roomId, roomKey)} seriesLink={series?.link} seriesOverview={series?.overview} onClose={() => setShareOpen(false)} />}
       {settingsOpen && <SettingsModal settings={meta.settings} ops={ops} peers={peers} facilitators={meta.facilitators} onClose={() => setSettingsOpen(false)}
-        sync={state.sync} canDelete={isFacilitator && !meta.series}
+        sync={state.sync} canDelete={isFacilitator} inSeries={!!meta.series}
+        onDelete={async () => { await series?.markDeleted(); state.sync.deleteFromServer?.(); }}
         onSaveAsTemplate={() => { setSettingsOpen(false); saveAsNewTemplate(); }} />}
       {templateYaml !== null && <TemplateEditor title="Save as a new template" initialYaml={templateYaml} onClose={() => setTemplateYaml(null)} onSaved={() => setTemplateYaml(null)} />}
       {nextOpen && (
@@ -826,8 +827,9 @@ function ShareModal({ link, seriesLink, seriesOverview, onClose }: { link: strin
   );
 }
 
-function SettingsModal({ settings, ops, peers, facilitators, onClose, onSaveAsTemplate, sync, canDelete }: {
+function SettingsModal({ settings, ops, peers, facilitators, onClose, onSaveAsTemplate, sync, canDelete, inSeries, onDelete }: {
   settings: Settings; ops: Ops; peers: Peer[]; facilitators: string[]; onClose: () => void; onSaveAsTemplate: () => void; sync: Sync; canDelete: boolean;
+  inSeries: boolean; onDelete: () => Promise<void>;
 }) {
   const [s, setS] = useState(settings);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
@@ -873,9 +875,13 @@ function SettingsModal({ settings, ops, peers, facilitators, onClose, onSaveAsTe
             {canDelete && (
               <div className="row">
                 <button type="button" className="danger" onClick={async () => {
-                  if (!(await ask('Delete this meeting from the server for everyone? It cannot be undone, and anyone who opens the link afterwards sees that it was deleted. Save the minutes or the meeting file first if you need a record.'))) return;
-                  sync.deleteFromServer?.();
-                  onClose();
+                  if (!(await ask(`Delete this meeting from the server for everyone? It cannot be undone, and anyone who opens the link afterwards sees that it was deleted.${inSeries ? ' The series link then starts a new meeting instead; the other meetings in the series stay.' : ''} Save the minutes or the meeting file first if you need a record.`))) return;
+                  try {
+                    await onDelete();
+                    onClose();
+                  } catch (e) {
+                    toastError(e);
+                  }
                 }}>Delete from server…</button>
               </div>
             )}
