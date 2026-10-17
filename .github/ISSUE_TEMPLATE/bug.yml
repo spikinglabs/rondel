@@ -1,0 +1,29 @@
+name: Something doesn't work
+description: Report a problem with Rondel.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Issues are public. Never paste a meeting or series link here; the link is the key to the meeting.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Rondel version
+      description: Shown in the footer, for example "Rondel 0.26.0".
+  - type: input
+    id: site
+    attributes:
+      label: Which site
+      description: For example rondel.lab.spikinglabs.com, or "my company's own".
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      description: For example Firefox on Windows, Safari on iPhone.
