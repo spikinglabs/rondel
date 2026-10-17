@@ -3,7 +3,7 @@
 # then open http://localhost:8787. Put it behind your usual HTTPS reverse proxy for real use.
 services:
   rondel:
-    build: ../..
+    build: ../..                     # or, without building: image: ghcr.io/spikinglabs/rondel:0.26
     ports:
       - "8787:8787"
     environment:
