@@ -119,6 +119,9 @@ Testers use https://rondel.lab.spikinglabs.com, so nothing goes there untested. 
    meetings and a "Staging" tag) and runs `npm run lab:check-staging` against it.
 3. Publishing a GitHub release with a version tag (for example `v0.26.0` on `main`, matching `package.json`) does
    the same, then deploys the lab site and runs `npm run lab:check-live`.
+4. After each deploy, `npm run verify` checks that the site sends exactly the files this commit builds, and a
+   release gets `fingerprints.txt` (the SHA-256 of every built file) attached. The build is reproducible, so
+   anyone can do the same check; see "Check it yourself" on the data page.
 
 The workflow needs the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The same
 `npm run lab:staging` / `lab:deploy` scripts work by hand; they use `deploy/spikinglabs/`.

@@ -2,7 +2,7 @@
 // Self-hosting settings: the product name, who runs the site (footer and data page), and a templates folder
 // copied in by scripts/site-config.mjs. Also checks the defaults when no operator is set.
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -43,7 +43,10 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 
 try {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 } });
-  await ctx.addInitScript(() => localStorage.setItem('rondel:me', JSON.stringify({ id: 'site-test-user', name: 'Ana' })));
+  await ctx.addInitScript(() => {
+    localStorage.setItem('rondel:me', JSON.stringify({ id: 'site-test-user', name: 'Ana' }));
+    document.addEventListener('securitypolicyviolation', (e) => (window.__csp ??= []).push(`${e.violatedDirective} ${e.blockedURI}`));
+  });
   const page = await ctx.newPage();
   await page.goto(url);
   await page.getByRole('heading', { name: 'Meetings' }).first().waitFor();
@@ -63,6 +66,30 @@ try {
   await body.getByText('nobody has changed it for 90 days and nobody').waitFor();
   check(await page.locator('.data-section').getByRole('link', { name: 'Example Corp IT' }).getAttribute('href') === 'mailto:it-help@example.com', 'contact link');
   ok('The data page shows the hosting sentence, retention and the contact address');
+
+  await body.getByText('may connect only to this site\'s own server (a Content-Security-Policy)').waitFor();
+  await page.goto(url);
+  await page.getByRole('button', { name: 'New meeting' }).click();
+  await page.getByRole('button', { name: /^Went well/ }).click();
+  await page.getByLabel('Title').fill('Policy check');
+  await page.getByRole('button', { name: 'Create meeting' }).click();
+  await page.getByText('● Saved').waitFor({ timeout: 10000 });
+  const violations = await page.evaluate(() => window.__csp ?? []);
+  check(violations.length === 0, `blocked by the Content-Security-Policy: ${violations.join(', ')}`);
+  ok('A server site has a Content-Security-Policy, says so on the data page, and meetings still save to the server');
+
+  // Run in a child process without blocking, since the room server answers from this one.
+  const verify = (dist) => new Promise((resolve) => execFile('node', ['scripts/verify.mjs', url], { env: { ...process.env, RONDEL_DIST: dist + '/' } },
+    (err, stdout) => resolve({ code: err ? err.code : 0, stdout })));
+  const good = await verify('dist');
+  check(good.code === 0 && good.stdout.includes('Same code'), `verify passes against the build:\n${good.stdout}`);
+  const tampered = fs.mkdtempSync(path.join(os.tmpdir(), 'rondel-site-tampered-'));
+  fs.cpSync('dist', tampered, { recursive: true });
+  const asset = fs.readdirSync(path.join(tampered, 'assets')).find((f) => f.startsWith('crypto-'));
+  fs.appendFileSync(path.join(tampered, 'assets', asset), '\n// changed');
+  const bad = await verify(tampered);
+  check(bad.code === 1 && bad.stdout.includes(`✗ assets/${asset}`), `verify reports a changed file:\n${bad.stdout}`);
+  ok('npm run verify confirms the site sends exactly this build, and catches a changed file');
 
   // A site with its own name and no operator.
   const plain = await browser.newContext();

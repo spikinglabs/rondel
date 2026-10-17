@@ -18,7 +18,8 @@
     "lab:check-live": "export BASE_URL=https://rondel.lab.spikinglabs.com/ && node --import tsx e2e/server.mjs && node --import tsx e2e/lab.mjs",
     "test": "node --import tsx --test test/*.test.ts",
     "test:e2e": "node e2e/smoke.mjs && node --import tsx e2e/server.mjs && node --import tsx e2e/series.mjs && node --import tsx e2e/data.mjs && node --import tsx e2e/lab.mjs && node --import tsx e2e/site.mjs && node --import tsx e2e/languages.mjs && node e2e/artifact.mjs && node --import tsx e2e/mobile.mjs",
-    "i18n": "node --import tsx scripts/i18n.mjs"
+    "i18n": "node --import tsx scripts/i18n.mjs",
+    "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
     "@trystero-p2p/nostr": "^0.26.0",

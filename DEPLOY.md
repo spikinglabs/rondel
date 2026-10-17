@@ -57,6 +57,13 @@ Design a meeting → Download .yaml. `npm test` checks every template in `deploy
 `node scripts/site-config.mjs deploy/acme/site.json` applies the folder to a build: it merges `site.json` into
 `dist/index.html` and copies `templates/`. Run it after every `npm run build`; it is safe to run twice.
 
+With `"sync": "server"` it also adds a Content-Security-Policy to the page: the page may load only its own files
+and connect only to its own server (plus `serverUrl`, if set). If you edit the `RONDEL_CONFIG` block in
+`dist/index.html` by hand afterwards, run `site-config.mjs` again, or the browser will refuse the edited block.
+
+Anyone can check that your site sends exactly the published code, which is what the data page's promises rest
+on: `npm run verify -- https://rondel.example.com/` on a build of the same version (the data page shows the commands).
+
 ## 2. Pick where it runs
 
 ### Cloudflare (Workers and Durable Objects)
