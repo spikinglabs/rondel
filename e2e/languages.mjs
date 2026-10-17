@@ -73,10 +73,16 @@ try {
   ok('In German, home and the meeting still fit a 360px phone screen');
 
   await page.locator('.me-button').click();
-  await page.getByLabel('Sprache').selectOption('en');
+  await page.locator('.modal').getByLabel('Sprache').selectOption('en');
   await Promise.all([page.waitForEvent('load'), page.locator('.modal').getByRole('button', { name: 'Speichern', exact: true }).click()]);
   await page.getByRole('button', { name: 'Invite' }).waitFor({ timeout: 15000 });
   ok('Switching the language to English in the preferences reloads the page in English');
+
+  await Promise.all([page.waitForEvent('load'), page.locator('.site-footer').getByLabel('Language').selectOption('de')]);
+  await page.getByRole('button', { name: 'Einladen' }).waitFor({ timeout: 15000 });
+  await Promise.all([page.waitForEvent('load'), page.locator('.site-footer').getByLabel('Sprache').selectOption('en')]);
+  await page.getByRole('button', { name: 'Invite' }).waitFor({ timeout: 15000 });
+  ok('The language menu at the bottom of every page switches the language straight away');
 
   assert(errors.length === 0, `page errors:\n${errors.join('\n')}`);
   console.log('All German interface checks passed');
