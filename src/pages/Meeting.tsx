@@ -4,7 +4,7 @@ import { LAYOUT_DEFAULT, voterId, forgetMeeting, getLayout, getPrefs, saveLayout
 import { setPresence, useMeeting, type Peer } from '../lib/useMeeting';
 import type { Sync } from '../lib/sync';
 import type { Ops } from '../lib/ops';
-import { minutesMarkdown } from '../lib/minutes';
+import { actionsCsv, minutesMarkdown } from '../lib/minutes';
 import { downloadText, exportMeeting, slug } from '../lib/files';
 import { Avatar, Modal, PrefsButton, TopBar, toast, toastError, ask, copyText, fmtDate } from '../components/ui';
 import { TimerView } from '../components/Timer';
@@ -232,7 +232,7 @@ export function MeetingPage({ roomId, roomKey, me, onRename }: { roomId: string;
         </aside>
       </div>
       <PeopleList names={suggestions} />
-      {minutesOpen && <MinutesModal markdown={minutesMarkdown(doc, view, names)} fileName={`${slug(meta.title)}-minutes.md`} onClose={() => setMinutesOpen(false)} />}
+      {minutesOpen && <MinutesModal markdown={minutesMarkdown(doc, view, names)} title={meta.title} fileName={`${(meta.createdAt ?? '').slice(0, 10)}-${slug(meta.title)}-minutes.md`.replace(/^-/, '')} actionsCsv={view.actions.length ? actionsCsv(view) : undefined} onClose={() => setMinutesOpen(false)} />}
       {shareOpen && <ShareModal link={meetingLink(roomId, roomKey)} seriesLink={series?.link} seriesOverview={series?.overview} onClose={() => setShareOpen(false)} />}
       {settingsOpen && <SettingsModal settings={meta.settings} ops={ops} peers={peers} facilitators={meta.facilitators} onClose={() => setSettingsOpen(false)}
         sync={state.sync} canDelete={isFacilitator && !meta.series}

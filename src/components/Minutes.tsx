@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Md } from './Markdown';
 import { Modal, copyText, toast } from './ui';
 import { downloadText } from '../lib/files';
+import { canSaveToFolder, chooseFolder, forgetFolder, saveIntoFolder, savedFolder } from '../lib/folder';
 
 // Inline styles for email: Outlook ignores stylesheets, so every element carries its own look.
 const EMAIL_STYLE: Record<string, string> = {
@@ -33,7 +34,7 @@ export function emailHtml(rendered: HTMLElement): string {
 }
 
 /** Copy formatted minutes (HTML for Outlook and other mail apps, with the Markdown as plain text). */
-export async function copyFormatted(rendered: HTMLElement, markdown: string) {
+export async function copyFormatted(rendered: HTMLElement, markdown: string, done = 'Minutes copied. Paste them into an email.') {
   const html = emailHtml(rendered);
   try {
     await navigator.clipboard.write([new ClipboardItem({
@@ -55,19 +56,52 @@ export async function copyFormatted(rendered: HTMLElement, markdown: string) {
     sel.removeAllRanges();
     holder.remove();
   }
-  toast('Minutes copied. Paste them into an email.');
+  toast(done);
 }
 
-/** The minutes, formatted, with ways to take them away: copy for email, copy as Markdown, or download. */
-export function MinutesModal({ markdown, fileName, onClose }: { markdown: string; fileName: string; onClose: () => void }) {
+/** A new email in the person's mail app, with the formatted minutes on the clipboard to paste in.
+ *  (Rondel knows no addresses, and a mailto body can only hold short plain text.) */
+export async function emailMinutes(rendered: HTMLElement, markdown: string, subject: string) {
+  await copyFormatted(rendered, markdown, 'Minutes copied. Paste them into the new email, add the participants and send.');
+  location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
+}
+
+/** The minutes, formatted, with ways to take them away: email, a folder, copy, or download. */
+export function MinutesModal({ markdown, title, fileName, actionsCsv, onClose }: { markdown: string; title: string; fileName: string; actionsCsv?: string; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const rendered = () => ref.current?.firstElementChild as HTMLElement | null;
+  const [folder, setFolder] = useState<FileSystemDirectoryHandle | null>(null);
+  const folderOk = canSaveToFolder();
+  useEffect(() => { if (folderOk) savedFolder().then(setFolder); }, [folderOk]);
+
+  const saveToFolder = async (pick = !folder) => {
+    try {
+      const dir = pick ? await chooseFolder() : folder;
+      if (!dir) return;
+      setFolder(dir);
+      if (await saveIntoFolder(dir, fileName, markdown)) toast(`Saved ${fileName} in ${dir.name || 'the folder'}`);
+      else toast('The browser did not allow saving in that folder.');
+    } catch (e: any) {
+      // The folder was moved or deleted: forget it and let the person choose again.
+      if (e?.name === 'NotFoundError') { await forgetFolder(); setFolder(null); toast('That folder is gone. Choose another one.'); }
+      else toast(`Could not save: ${e?.message ?? e}`);
+    }
+  };
+
   return (
     <Modal title="Minutes" onClose={onClose} wide>
-      <div className="row wrap" style={{ marginBottom: 12 }}>
-        <button className="primary" onClick={() => ref.current && copyFormatted(ref.current.firstElementChild as HTMLElement, markdown)}>Copy for email</button>
-        <button onClick={() => copyText(markdown, 'Minutes copied as Markdown')}>Copy Markdown</button>
-        <button onClick={() => downloadText(fileName, markdown, 'text/markdown')}>Download .md</button>
+      <div className="row wrap" style={{ marginBottom: 8 }}>
+        <button className="primary" onClick={() => rendered() && copyFormatted(rendered()!, markdown)}>Copy for email</button>
+        <button onClick={() => rendered() && emailMinutes(rendered()!, markdown, title)} title="Opens a new email in your mail app; paste the minutes in">Email</button>
+        {folderOk && <button onClick={() => saveToFolder()} title="For example a OneDrive, SharePoint or Google Drive folder on this computer">{folder ? `Save to ${folder.name || 'folder'}` : 'Save to folder…'}</button>}
+        {folderOk && folder && <button className="ghost sm" onClick={() => saveToFolder(true)}>Change folder</button>}
       </div>
+      <div className="row wrap" style={{ marginBottom: 12 }}>
+        <button className="sm" onClick={() => copyText(markdown, 'Minutes copied as Markdown')}>Copy Markdown</button>
+        <button className="sm" onClick={() => downloadText(fileName, markdown, 'text/markdown')}>Download .md</button>
+        {actionsCsv && <button className="sm" onClick={() => downloadText(fileName.replace(/minutes\.md$/, 'actions.csv'), actionsCsv, 'text/csv')} title="Opens in Excel; imports into Jira, Planner or Azure DevOps">Actions as CSV</button>}
+      </div>
+      {folderOk && <p className="small muted" style={{ marginTop: -4 }}>Save to folder writes the minutes into a folder on this computer, such as your OneDrive or Google Drive folder, which then syncs them. Saving again replaces the file.</p>}
       <div className="minutes-view" ref={ref}><Md text={markdown} doc /></div>
     </Modal>
   );

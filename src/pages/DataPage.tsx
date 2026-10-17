@@ -105,6 +105,7 @@ export function DataPage() {
           <Section title="Files you save">
             <ul>
               <li><strong>Minutes</strong> (copied or downloaded) are plain, readable text. Treat them like any meeting notes.</li>
+              <li><strong>Save to folder</strong> writes the minutes, readable, into a folder you choose on this computer (for example your OneDrive or Google Drive folder, which then syncs them as usual). Your browser remembers which folder; Rondel's server is not involved. <strong>Actions as CSV</strong> is a readable list of the action items.</li>
               <li>A <strong>meeting file</strong> holds the whole meeting and its key, unencrypted. Anyone with the file can read it and open the live meeting.</li>
               <li>A <strong>browser backup</strong> holds everything listed above, including all your meeting keys. It is readable unless you set a passphrase, which encrypts it in your browser (PBKDF2 and AES-GCM). There is no way to recover a forgotten passphrase.</li>
             </ul>
