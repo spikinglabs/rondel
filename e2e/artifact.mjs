@@ -289,7 +289,11 @@ try {
   ok('Eve designed a retro from timed stages (57 min, 10:00 to 10:57), and starting its Vote stage switched the board to voting');
 
   const dump = JSON.stringify([...store.values()].map((m) => [...m.values()]));
-  for (const s of ['Quarterly planning', 'Budget for Q1', 'Too many meetings', 'Ana', 'Cara']) assert(!dump.includes(s), `storage contains "${s}"`);
+  // Ciphertext is base64, so short names like "Ana" can turn up inside it by chance; only count a match that
+  // isn't part of a longer base64 run.
+  for (const s of ['Quarterly planning', 'Budget for Q1', 'Too many meetings', 'Ana', 'Cara']) {
+    assert(!new RegExp(`(?<![A-Za-z0-9+/])${s}(?![A-Za-z0-9+/=])`).test(dump), `storage contains "${s}"`);
+  }
   ok('The artifact storage holds no readable meeting content or names');
 
   const real = errors.filter((e) => !/status of 404/.test(e));
