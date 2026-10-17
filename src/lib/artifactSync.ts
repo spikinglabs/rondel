@@ -2,6 +2,7 @@ import * as Y from 'yjs';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import { deriveKeys, open, seal, type RoomKeys } from './crypto';
 import type { Sync, SyncStatus } from './sync';
+import { t } from './i18n';
 
 // The small slice of the claude.ai artifact runtime ("db" and "room" capabilities) this adapter uses.
 interface DbError { code: string; message: string }
@@ -105,13 +106,13 @@ export class ArtifactSync implements Sync {
         const changes = snap.docChanges();
         const fromCache = snap.metadata.fromCache;
         this.incoming = this.incoming.then(() => this.receive(changes, fromCache)).catch((err) => {
-          this.error = `Could not read meeting data: ${err?.message ?? err}`;
+          this.error = t('Could not read meeting data: {error}', { error: err?.message ?? err });
           this.emit();
         });
       },
       (e) => {
         if (e.code === 'revoked' || e.code === 'not_granted') {
-          this.error = 'This preview no longer has access to its storage.';
+          this.error = t('This preview no longer has access to its storage.');
           this.emit();
           return;
         }
@@ -176,7 +177,7 @@ export class ArtifactSync implements Sync {
   private async write(u: Uint8Array, attempt = 0): Promise<void> {
     const data = await seal((await this.keys).key, u);
     if (data.length > MAX_ENTRY) {
-      this.error = 'That change is too large to store in this preview.';
+      this.error = t('That change is too large to store in this preview.');
       this.emit();
       return;
     }
@@ -186,14 +187,14 @@ export class ArtifactSync implements Sync {
       const code = e?.code;
       if (code === 'invalid_argument' || code === 'not_granted') {
         this.readOnly = true;
-        this.error = 'You can view this meeting but not change it. Ask the owner of the preview for Contributor access.';
+        this.error = t('You can view this meeting but not change it. Ask the owner of the preview for Contributor access.');
       } else if (code === 'quota_exceeded') {
-        this.error = 'The preview storage is full.';
+        this.error = t('The preview storage is full.');
       } else if (attempt < 3) {
         await new Promise((r) => setTimeout(r, 500 + Math.random() * 1000 * (attempt + 1)));
         return this.write(u, attempt + 1);
       } else {
-        this.error = `Could not save: ${e?.message ?? e}`;
+        this.error = t('Could not save: {error}', { error: e?.message ?? e });
       }
       this.emit();
     }

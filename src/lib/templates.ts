@@ -1,6 +1,7 @@
 import { LineCounter, parseDocument, stringify } from 'yaml';
 import { ACTIVITIES, MIDDLE_BLOCKS, MIDDLE_MAX, SCREEN_BLOCKS, fillTitle, type Activity, type MiddleBlock, type Screen, type ScreenBlock, type MeetingType, type Settings, type TemplateDef } from './model';
 import { BUILTIN_YAML } from '../templates/builtin';
+import { languageTemplates, t } from './i18n';
 
 // Meeting templates are written in YAML. The format, with every field:
 //
@@ -71,102 +72,102 @@ export function parseTemplate(text: string, idPrefix = ''): { template: Template
   const err = (path: (string | number)[], message: string) => errors.push({ message, line: lineOf(path) });
   const raw = doc.toJS();
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { template: null, errors: [{ message: 'A template is a set of fields such as "name:", "columns:" and "agenda:".' }] };
+    return { template: null, errors: [{ message: t('A template is a set of fields such as "name:", "columns:" and "agenda:".') }] };
   }
 
   const unknown = (obj: object, allowed: string[], path: (string | number)[], where: string) => {
     for (const k of Object.keys(obj)) {
-      if (!allowed.includes(k)) err([...path, k], `Unknown field "${k}" in ${where}. Allowed: ${allowed.join(', ')}.`);
+      if (!allowed.includes(k)) err([...path, k], t('Unknown field "{field}" in {where}. Allowed: {allowed}.', { field: k, where, allowed: allowed.join(', ') }));
     }
   };
   const text_ = (v: unknown, path: (string | number)[], label: string, opts: { required?: boolean; max?: number } = {}) => {
     if (v === undefined || v === null || v === '') {
-      if (opts.required) err(path, `${label} is required.`);
+      if (opts.required) err(path, t('{label} is required.', { label }));
       return '';
     }
     if (typeof v !== 'string' && typeof v !== 'number') {
-      err(path, `${label} must be text.`);
+      err(path, t('{label} must be text.', { label }));
       return '';
     }
     const s = String(v).trim();
     const max = opts.max ?? LIMITS.text;
-    if (s.length > max) err(path, `${label} is too long (${s.length} characters, at most ${max}).`);
+    if (s.length > max) err(path, t('{label} is too long ({length} characters, at most {max}).', { label, length: s.length, max }));
     return s.slice(0, max);
   };
   const list = (v: unknown, path: string[], label: string, max: number): unknown[] => {
     if (v === undefined || v === null) return [];
     if (!Array.isArray(v)) {
-      err(path, `${label} must be a list, with each entry starting with "- ".`);
+      err(path, t('{label} must be a list, with each entry starting with "- ".', { label }));
       return [];
     }
-    if (v.length > max) err(path, `${label} has ${v.length} entries; at most ${max} are allowed.`);
+    if (v.length > max) err(path, t('{label} has {count} entries; at most {max} are allowed.', { label, count: v.length, max }));
     return v.slice(0, max);
   };
 
-  unknown(raw, TOP_KEYS, [], 'the template');
+  unknown(raw, TOP_KEYS, [], t('the template'));
   const name = text_(raw.name, ['name'], 'name', { required: true, max: 80 });
   let type: MeetingType = 'general';
   if (raw.type !== undefined) {
     if (MEETING_TYPES.includes(raw.type)) type = raw.type;
-    else err(['type'], `type must be one of ${MEETING_TYPES.join(', ')}.`);
+    else err(['type'], t('type must be one of {list}.', { list: MEETING_TYPES.join(', ') }));
   }
 
   const columns = list(raw.columns, ['columns'], 'columns', LIMITS.columns).map((c, i) => {
     const path = ['columns', i];
-    if (typeof c === 'string') return { title: text_(c, path, `Column ${i + 1}`, { required: true, max: 80 }), description: '', color: '#6b7280' };
+    if (typeof c === 'string') return { title: text_(c, path, t('Column {n}', { n: i + 1 }), { required: true, max: 80 }), description: '', color: '#6b7280' };
     if (!c || typeof c !== 'object') {
-      err(path, `Column ${i + 1} must have a title.`);
+      err(path, t('Column {n} must have a title.', { n: i + 1 }));
       return { title: '', description: '', color: '#6b7280' };
     }
-    unknown(c, COLUMN_KEYS, path, `column ${i + 1}`);
+    unknown(c, COLUMN_KEYS, path, t('column {n}', { n: i + 1 }));
     const o = c as Record<string, unknown>;
     return {
-      title: text_(o.title, [...path, 'title'], `Column ${i + 1} title`, { required: true, max: 80 }),
-      description: text_(o.description, [...path, 'description'], `Column ${i + 1} description`, { max: 300 }),
+      title: text_(o.title, [...path, 'title'], t('Column {n} title', { n: i + 1 }), { required: true, max: 80 }),
+      description: text_(o.description, [...path, 'description'], t('Column {n} description', { n: i + 1 }), { max: 300 }),
       color: typeof o.color === 'string' && /^#[0-9a-f]{6}$/i.test(o.color) ? o.color : '#6b7280',
     };
   });
 
   const agenda = list(raw.agenda, ['agenda'], 'agenda', LIMITS.agenda).map((a, i) => {
     const path = ['agenda', i];
-    if (typeof a === 'string') return { title: text_(a, path, `Agenda item ${i + 1}`, { required: true }), durationMin: 5 };
+    if (typeof a === 'string') return { title: text_(a, path, t('Agenda item {n}', { n: i + 1 }), { required: true }), durationMin: 5 };
     if (!a || typeof a !== 'object') {
-      err(path, `Agenda item ${i + 1} must have a title.`);
+      err(path, t('Agenda item {n} must have a title.', { n: i + 1 }));
       return { title: '', durationMin: 5 };
     }
-    unknown(a, AGENDA_KEYS, path, `agenda item ${i + 1}`);
+    unknown(a, AGENDA_KEYS, path, t('agenda item {n}', { n: i + 1 }));
     const o = a as Record<string, unknown>;
     let minutes = 5;
     if (o.minutes !== undefined) {
       if (typeof o.minutes === 'number' && Number.isInteger(o.minutes) && o.minutes >= 0 && o.minutes <= LIMITS.minutes) minutes = o.minutes;
-      else err([...path, 'minutes'], `Agenda item ${i + 1}: minutes must be a whole number from 0 to ${LIMITS.minutes}.`);
+      else err([...path, 'minutes'], t('Agenda item {n}: minutes must be a whole number from 0 to {max}.', { n: i + 1, max: LIMITS.minutes }));
     }
     let activity: Activity = 'topic';
     if (o.activity !== undefined && o.activity !== null) {
       if (ACTIVITIES.includes(o.activity as Activity)) activity = o.activity as Activity;
-      else err([...path, 'activity'], `Agenda item ${i + 1}: activity must be one of ${ACTIVITIES.join(', ')}.`);
+      else err([...path, 'activity'], t('Agenda item {n}: activity must be one of {list}.', { n: i + 1, list: ACTIVITIES.join(', ') }));
     }
-    const owner = text_(o.owner, [...path, 'owner'], `Agenda item ${i + 1} owner`, { max: 80 });
-    const notes = text_(o.notes, [...path, 'notes'], `Agenda item ${i + 1} notes`, { max: LIMITS.notes });
+    const owner = text_(o.owner, [...path, 'owner'], t('Agenda item {n} owner', { n: i + 1 }), { max: 80 });
+    const notes = text_(o.notes, [...path, 'notes'], t('Agenda item {n} notes', { n: i + 1 }), { max: LIMITS.notes });
     const screen: Screen = {};
     if (o.screen !== undefined && o.screen !== null) {
-      if (typeof o.screen !== 'object' || Array.isArray(o.screen)) err([...path, 'screen'], `Agenda item ${i + 1}: screen must be a set of fields, like board: folded.`);
+      if (typeof o.screen !== 'object' || Array.isArray(o.screen)) err([...path, 'screen'], t('Agenda item {n}: screen must be a set of fields, like board: folded.', { n: i + 1 }));
       else {
-        unknown(o.screen, [...SCREEN_BLOCKS, 'middle'], [...path, 'screen'], `agenda item ${i + 1} screen`);
+        unknown(o.screen, [...SCREEN_BLOCKS, 'middle'], [...path, 'screen'], t('agenda item {n} screen', { n: i + 1 }));
         for (const [k, v] of Object.entries(o.screen as Record<string, unknown>)) {
           if (k === 'middle') {
             const list = Array.isArray(v) ? v : [v];
             if (list.length <= MIDDLE_MAX && list.every((x) => MIDDLE_BLOCKS.includes(x as MiddleBlock))) screen.middle = [...new Set(list as MiddleBlock[])];
-            else err([...path, 'screen', k], `Agenda item ${i + 1}: screen middle is up to ${MIDDLE_MAX} of ${MIDDLE_BLOCKS.join(', ')}.`);
+            else err([...path, 'screen', k], t('Agenda item {n}: screen middle is up to {max} of {list}.', { n: i + 1, max: MIDDLE_MAX, list: MIDDLE_BLOCKS.join(', ') }));
           } else if ((SCREEN_BLOCKS as string[]).includes(k)) {
             if (v === 'open' || v === 'folded') screen[k as ScreenBlock] = v;
-            else err([...path, 'screen', k], `Agenda item ${i + 1}: screen ${k} must be open or folded.`);
+            else err([...path, 'screen', k], t('Agenda item {n}: screen {key} must be open or folded.', { n: i + 1, key: k }));
           }
         }
       }
     }
     return {
-      title: text_(o.title, [...path, 'title'], `Agenda item ${i + 1} title`, { required: true }),
+      title: text_(o.title, [...path, 'title'], t('Agenda item {n} title', { n: i + 1 }), { required: true }),
       durationMin: minutes,
       ...(activity !== 'topic' ? { activity } : {}),
       ...(owner ? { owner } : {}),
@@ -177,7 +178,7 @@ export function parseTemplate(text: string, idPrefix = ''): { template: Template
 
   const settings: Partial<Settings> = {};
   if (raw.settings !== undefined && raw.settings !== null) {
-    if (typeof raw.settings !== 'object' || Array.isArray(raw.settings)) err(['settings'], 'settings must be a set of fields.');
+    if (typeof raw.settings !== 'object' || Array.isArray(raw.settings)) err(['settings'], t('settings must be a set of fields.'));
     else {
       unknown(raw.settings, Object.keys(SETTING_KEYS), ['settings'], 'settings');
       for (const [k, v] of Object.entries(raw.settings as Record<string, unknown>)) {
@@ -185,10 +186,10 @@ export function parseTemplate(text: string, idPrefix = ''): { template: Template
         if (!key) continue;
         if (k === 'votes_per_person' || k === 'votes_per_card') {
           if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 99) (settings as any)[key] = v;
-          else err(['settings', k], `${k} must be a whole number from 0 (unlimited) to 99.`);
+          else err(['settings', k], t('{key} must be a whole number from 0 (unlimited) to 99.', { key: k }));
         } else if (typeof v === 'boolean') {
           (settings as any)[key] = k === 'anonymous_cards' ? !v : v;
-        } else err(['settings', k], `${k} must be true or false.`);
+        } else err(['settings', k], t('{key} must be true or false.', { key: k }));
       }
     }
   }
@@ -278,7 +279,9 @@ agenda:
 
 // ------------------------------------------------------------ the template library
 
-export const BUILTIN_TEMPLATES: ListedTemplate[] = BUILTIN_YAML.map((yaml) => {
+// Languages can bring their own versions of the built-in templates (same ids), so a new meeting's columns and
+// agenda are in that language too.
+export const BUILTIN_TEMPLATES: ListedTemplate[] = (languageTemplates() ?? BUILTIN_YAML).map((yaml) => {
   const { template, errors } = parseTemplate(yaml);
   if (!template) throw new Error(`Built-in template is invalid: ${errors[0]?.message}`);
   return { template, source: 'builtin' as const, yaml };
@@ -322,7 +325,7 @@ export function loadMyTemplates(): ListedTemplate[] {
 /** Save (or replace, by id) a template in this browser. Returns its id. */
 export function saveMyTemplate(yaml: string, replaceId?: string): string {
   const { template } = parseTemplate(yaml, 'my-');
-  if (!template) throw new Error('The template has errors.');
+  if (!template) throw new Error(t('The template has errors.'));
   const others = loadMyTemplates().filter((t) => t.template.id !== template.id && t.template.id !== replaceId);
   localStorage.setItem(MINE_KEY, JSON.stringify([...others.map((t) => t.yaml), yaml]));
   return template.id;
@@ -378,18 +381,18 @@ export function templateFromMeeting(v: {
 // ------------------------------------------------------------ design checks
 
 /** Gentle warnings about a meeting design; none of them stop it from being saved. */
-export function designChecks(t: TemplateDef): string[] {
+export function designChecks(tpl: TemplateDef): string[] {
   const out: string[] = [];
-  const stages = t.agenda;
+  const stages = tpl.agenda;
   const first = (a: Activity) => stages.findIndex((s) => (s.activity ?? 'topic') === a);
   const total = stages.reduce((n, s) => n + s.durationMin, 0);
-  if (!stages.length) out.push('Add at least one stage.');
+  if (!stages.length) out.push(t('Add at least one stage.'));
   const board = stages.filter((s) => s.activity && ['write', 'group', 'vote', 'discuss', 'actions'].includes(s.activity));
-  if (board.length && !t.columns.length) out.push('There are board stages but no columns. Add columns here, or during the meeting.');
-  if (first('vote') >= 0 && first('write') >= 0 && first('vote') < first('write')) out.push('Voting comes before writing cards.');
-  if (first('group') >= 0 && first('write') >= 0 && first('group') < first('write')) out.push('Grouping comes before writing cards.');
-  if (first('discuss') >= 0 && first('vote') >= 0 && first('discuss') < first('vote')) out.push('Discussing comes before voting, so cards are not yet in vote order.');
-  if (total > 90 && first('break') < 0) out.push(`The meeting runs ${total} minutes without a break.`);
-  for (const s of stages) if (s.durationMin === 0) out.push(`“${s.title || 'Untitled'}” has no time set, so its timer won't start.`);
+  if (board.length && !tpl.columns.length) out.push(t('There are board stages but no columns. Add columns here, or during the meeting.'));
+  if (first('vote') >= 0 && first('write') >= 0 && first('vote') < first('write')) out.push(t('Voting comes before writing cards.'));
+  if (first('group') >= 0 && first('write') >= 0 && first('group') < first('write')) out.push(t('Grouping comes before writing cards.'));
+  if (first('discuss') >= 0 && first('vote') >= 0 && first('discuss') < first('vote')) out.push(t('Discussing comes before voting, so cards are not yet in vote order.'));
+  if (total > 90 && first('break') < 0) out.push(t('The meeting runs {n} minutes without a break.', { n: total }));
+  for (const s of stages) if (s.durationMin === 0) out.push(t('“{title}” has no time set, so its timer won\'t start.', { title: s.title || t('Untitled') }));
   return out;
 }

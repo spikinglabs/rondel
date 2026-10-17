@@ -1,4 +1,5 @@
 import * as Y from 'yjs';
+import { locale, t } from './i18n';
 
 // ------------------------------------------------------------ types
 
@@ -13,18 +14,18 @@ export const RETRO_PHASES: RetroPhase[] = ['write', 'group', 'vote', 'discuss', 
 export type Activity = 'topic' | 'round' | 'brainstorm' | RetroPhase | 'break';
 export const ACTIVITIES: Activity[] = ['topic', 'round', 'brainstorm', 'write', 'group', 'vote', 'discuss', 'actions', 'break'];
 export const ACTIVITY_LABEL: Record<Activity, string> = {
-  topic: 'Discussion', round: 'Round', brainstorm: 'Brainstorm', write: 'Write cards', group: 'Group cards', vote: 'Vote', discuss: 'Discuss cards', actions: 'Actions', break: 'Break',
+  topic: t('Discussion'), round: t('Round'), brainstorm: t('Brainstorm'), write: t('Write cards'), group: t('Group cards'), vote: t('Vote'), discuss: t('Discuss cards'), actions: t('Actions'), break: t('Break'),
 };
 export const ACTIVITY_HINT: Record<Activity, string> = {
-  topic: 'Shared notes and decisions for one topic.',
-  round: 'Everyone speaks in turn, for example a check-in or updates.',
-  brainstorm: 'Everyone adds ideas at once, without judging; then dot-vote and turn the best into actions.',
-  write: 'People write cards on the board. Drafts stay private until shared.',
-  group: 'Cluster similar cards and name the groups.',
-  vote: 'Everyone votes for the cards to discuss.',
-  discuss: 'Talk through cards in vote order.',
-  actions: 'Agree owners and due dates for actions.',
-  break: 'A pause. The timer runs; nothing to capture.',
+  topic: t('Shared notes and decisions for one topic.'),
+  round: t('Everyone speaks in turn, for example a check-in or updates.'),
+  brainstorm: t('Everyone adds ideas at once, without judging; then dot-vote and turn the best into actions.'),
+  write: t('People write cards on the board. Drafts stay private until shared.'),
+  group: t('Cluster similar cards and name the groups.'),
+  vote: t('Everyone votes for the cards to discuss.'),
+  discuss: t('Talk through cards in vote order.'),
+  actions: t('Agree owners and due dates for actions.'),
+  break: t('A pause. The timer runs; nothing to capture.'),
 };
 export const isBoardActivity = (a: Activity | undefined): a is RetroPhase => !!a && (RETRO_PHASES as string[]).includes(a);
 
@@ -34,7 +35,7 @@ export type MiddleBlock = 'board' | 'brainstorm' | 'topic' | 'actions' | 'decisi
 export const MIDDLE_BLOCKS: MiddleBlock[] = ['board', 'brainstorm', 'topic', 'actions', 'decisions', 'people'];
 export type ScreenBlock = 'agenda' | MiddleBlock;
 export const SCREEN_BLOCKS: ScreenBlock[] = ['agenda', 'people', 'board', 'brainstorm', 'topic', 'actions', 'decisions'];
-export const SCREEN_BLOCK_LABEL: Record<ScreenBlock, string> = { agenda: 'Agenda', people: 'People', board: 'Board', brainstorm: 'Brainstorm', topic: 'Discussion', actions: 'Action items', decisions: 'Decisions' };
+export const SCREEN_BLOCK_LABEL: Record<ScreenBlock, string> = { agenda: t('Agenda'), people: t('People'), board: t('Board'), brainstorm: t('Brainstorm'), topic: t('Discussion'), actions: t('Action items'), decisions: t('Decisions') };
 export const MIDDLE_MAX = 2;
 export type Screen = Partial<Record<ScreenBlock, 'open' | 'folded'>> & { middle?: MiddleBlock[] };
 /** What each kind of stage puts in the middle unless the design says otherwise. */
@@ -165,7 +166,7 @@ export interface TemplateDef {
 }
 
 export const TYPE_LABEL: Record<MeetingType, string> = {
-  retro: 'Retro', standup: 'Stand-up', planning: 'Planning', one_on_one: '1:1', general: 'Meeting',
+  retro: t('Retro'), standup: t('Stand-up'), planning: t('Planning'), one_on_one: t('1:1'), general: t('Meeting'),
 };
 
 export function defaultSettings(type: MeetingType): Settings {
@@ -378,7 +379,7 @@ export function initialPhase(t: TemplateDef): RetroPhase | null {
 /** A template's default meeting title, with {date} and {month} filled in. */
 export function fillTitle(t: { name: string; title?: string }, now = new Date()) {
   const date = now.toISOString().slice(0, 10);
-  const month = now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  const month = now.toLocaleDateString(locale(), { month: 'long', year: 'numeric' });
   return t.title ? t.title.replace(/\{date\}/g, date).replace(/\{month\}/g, month) : `${t.name} – ${date}`;
 }
 

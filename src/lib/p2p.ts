@@ -3,6 +3,7 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import { joinRoom as joinNostr } from '@trystero-p2p/nostr';
 import { joinRoom as joinTorrent } from '@trystero-p2p/torrent';
 import type { Sync, SyncStatus } from './sync';
+import { t } from './i18n';
 
 /**
  * Keeps a Y.Doc and its awareness (presence) in sync with everyone else who has the same
@@ -36,7 +37,7 @@ export class PeerSync implements Sync {
     const join = cfg.strategy === 'torrent' ? joinTorrent : joinNostr;
     this.room = join(config, roomId, {
       onJoinError: (d) => {
-        this.error = String((d as any)?.error ?? 'Could not connect to a participant');
+        this.error = String((d as any)?.error ?? t('Could not connect to a participant'));
         this.emit();
       },
     }) as ReturnType<typeof joinNostr>;

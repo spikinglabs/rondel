@@ -1,5 +1,6 @@
 import * as Y from 'yjs';
 import { openDoc } from './store';
+import { t } from './i18n';
 
 // A backup of everything Rondel keeps in this browser, to move to another browser or device:
 // your identity (so you stay facilitator), preferences, My templates, the meeting and series lists with their
@@ -45,21 +46,21 @@ export async function makeBackupFile(data: BackupData, passphrase?: string): Pro
 
 export function parseBackupFile(text: string): BackupFile {
   let f: any;
-  try { f = JSON.parse(text); } catch { throw new Error('This is not a Rondel backup file'); }
-  if (f?.format !== 'rondel-backup') throw new Error(f?.format === 'rondel-meeting' ? 'This is a meeting file. Open it from the home page with "Open meeting file".' : 'This is not a Rondel backup file');
-  if (f.version !== 1) throw new Error('This backup was made by a newer version of Rondel');
+  try { f = JSON.parse(text); } catch { throw new Error(t('This is not a Rondel backup file')); }
+  if (f?.format !== 'rondel-backup') throw new Error(f?.format === 'rondel-meeting' ? t('This is a meeting file. Open it from the home page with "Open meeting file".') : t('This is not a Rondel backup file'));
+  if (f.version !== 1) throw new Error(t('This backup was made by a newer version of Rondel'));
   return f as BackupFile;
 }
 
 export async function readBackupFile(f: BackupFile, passphrase?: string): Promise<BackupData> {
   if (!f.encrypted) return f.data;
-  if (!passphrase) throw new Error('This backup is protected. Enter its passphrase.');
+  if (!passphrase) throw new Error(t('This backup is protected. Enter its passphrase.'));
   try {
     const key = await passKey(passphrase, fromB64(f.kdf.salt), f.kdf.iterations);
     const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(f.iv) }, key, fromB64(f.data));
     return JSON.parse(new TextDecoder().decode(plain));
   } catch {
-    throw new Error('Wrong passphrase, or the file is damaged');
+    throw new Error(t('Wrong passphrase, or the file is damaged'));
   }
 }
 

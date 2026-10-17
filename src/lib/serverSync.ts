@@ -4,6 +4,7 @@ import { deriveKeys, open, seal, type RoomKeys } from './crypto';
 import { serverBase, type Sync, type SyncStatus } from './sync';
 import type { ClientMessage, ServerMessage } from '../../server/core/protocol';
 import { PROTOCOL_VERSION } from '../../server/core/protocol';
+import { t } from './i18n';
 
 /** Compact the stored log once it holds this many entries. */
 const COMPACT_AFTER = 150;
@@ -91,7 +92,7 @@ export class ServerSync implements Sync {
       this.lastHeard = Date.now();
       const msg = JSON.parse(e.data) as ServerMessage;
       this.in = this.in.then(() => this.handle(msg)).catch((err) => {
-        this.error = `Could not read meeting data: ${err?.message ?? err}`;
+        this.error = t('Could not read meeting data: {error}', { error: err?.message ?? err });
         this.emit();
       });
     };

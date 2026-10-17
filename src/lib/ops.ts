@@ -4,6 +4,7 @@ import {
   type ActionItem, type AgendaItem, type Brainstorm, type Card, type Column, type RetroPhase, type Settings, type Timer,
 } from './model';
 import { addMine, voterId } from './store';
+import { t } from './i18n';
 
 const COLORS = ['#3b7dd8', '#2f9e6b', '#d4504a', '#d99a1e', '#8a5cd1', '#1f9aa5', '#c2557f', '#6b7280'];
 
@@ -156,8 +157,8 @@ export function meetingOps(doc: Y.Doc, roomId: string, me: { id: string; name: s
       const cur = m.votes.get(key) ?? 0;
       if (delta > 0) {
         const used = Object.values(v.votesByVoter[voter] ?? {}).reduce((a, b) => a + b, 0);
-        if (v.meta.settings.votesPerUser && used >= v.meta.settings.votesPerUser) throw new LimitError('You have used all your votes');
-        if (v.meta.settings.votesPerCard && cur >= v.meta.settings.votesPerCard) throw new LimitError('Vote limit for this card reached');
+        if (v.meta.settings.votesPerUser && used >= v.meta.settings.votesPerUser) throw new LimitError(t('You have used all your votes'));
+        if (v.meta.settings.votesPerCard && cur >= v.meta.settings.votesPerCard) throw new LimitError(t('Vote limit for this card reached'));
       }
       const next = Math.max(0, cur + delta);
       if (next) m.votes.set(key, next);
@@ -240,7 +241,7 @@ export function meetingOps(doc: Y.Doc, roomId: string, me: { id: string; name: s
       if (delta > 0) {
         const mine = v.ideaVotesByVoter[voter] ?? {};
         const used = v.ideas.filter((i) => i.itemId === idea.itemId).reduce((n, i) => n + (mine[i.id] ?? 0), 0);
-        if (used >= IDEA_DOTS) throw new LimitError(`You have used your ${IDEA_DOTS} dots`);
+        if (used >= IDEA_DOTS) throw new LimitError(t('You have used your {n} dots', { n: IDEA_DOTS }));
       }
       const next = Math.max(0, cur + delta);
       if (next) m.ideaVotes.set(key, next);

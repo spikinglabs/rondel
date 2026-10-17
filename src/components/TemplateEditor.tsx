@@ -5,6 +5,7 @@ import { deleteMyTemplate, defaultTitle, parseTemplate, saveMyTemplate, slug, te
 import { MeetingDesigner } from './MeetingDesigner';
 export { STARTER_YAML } from '../lib/templates';
 import { downloadText } from '../lib/files';
+import { t } from '../lib/i18n';
 
 
 /** Design a meeting template with the visual designer, or write it as YAML; both edit the same template. */
@@ -16,7 +17,7 @@ export function TemplateEditor(props: { initialYaml: string; editingId?: string;
   const [designFrom, setDesignFrom] = useState(() => ({ template, version: 0 }));
   const [mode, setMode] = useState<'design' | 'yaml'>(template ? 'design' : 'yaml');
   const toDesign = () => {
-    if (!template) return toast('Fix the problems in the YAML first; they are listed under it.');
+    if (!template) return toast(t('Fix the problems in the YAML first; they are listed under it.'));
     setDesignFrom((x) => ({ template, version: x.version + 1 }));
     setMode('design');
   };
@@ -33,7 +34,7 @@ export function TemplateEditor(props: { initialYaml: string; editingId?: string;
   const save = () => {
     try {
       const id = saveMyTemplate(yaml, props.editingId);
-      toast('Template saved in this browser');
+      toast(t('Template saved in this browser'));
       props.onSaved(id);
     } catch (e) {
       toast((e as Error).message);
@@ -41,9 +42,9 @@ export function TemplateEditor(props: { initialYaml: string; editingId?: string;
   };
 
   return (
-    <Modal title={props.title ?? (props.editingId ? 'Edit meeting design' : 'Design a meeting')} onClose={props.onClose} width={1080}>
+    <Modal title={props.title ?? (props.editingId ? t('Edit meeting design') : t('Design a meeting'))} onClose={props.onClose} width={1080}>
       <div className="tabs" role="tablist" style={{ marginBottom: 0 }}>
-        <button type="button" role="tab" aria-selected={mode === 'design'} onClick={() => mode !== 'design' && toDesign()}>Designer</button>
+        <button type="button" role="tab" aria-selected={mode === 'design'} onClick={() => mode !== 'design' && toDesign()}>{t('Designer')}</button>
         <button type="button" role="tab" aria-selected={mode === 'yaml'} onClick={() => setMode('yaml')}>YAML</button>
       </div>
       {mode === 'design' && designFrom.template && (
@@ -54,7 +55,7 @@ export function TemplateEditor(props: { initialYaml: string; editingId?: string;
       )}
       {mode === 'yaml' && <div className="template-editor">
         <div className="col" style={{ gap: 6, minWidth: 0 }}>
-          <label htmlFor="template-yaml" className="small muted">Template (YAML)</label>
+          <label htmlFor="template-yaml" className="small muted">{t('Template (YAML)')}</label>
           <textarea id="template-yaml" ref={area} className="code" value={yaml} spellCheck={false} autoCapitalize="off" autoCorrect="off"
             onChange={(e) => setYaml(e.target.value)}
             onKeyDown={(e) => {
@@ -70,31 +71,31 @@ export function TemplateEditor(props: { initialYaml: string; editingId?: string;
             <ul className="template-errors" aria-live="polite">
               {errors.map((e, i) => (
                 <li key={i}>
-                  {e.line ? <button type="button" className="ghost sm" onClick={() => goToLine(e.line)}>Line {e.line}</button> : null}
+                  {e.line ? <button type="button" className="ghost sm" onClick={() => goToLine(e.line)}>{t('Line {n}', { n: e.line })}</button> : null}
                   <span>{e.message}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="small muted">No problems found.</p>
+            <p className="small muted">{t('No problems found.')}</p>
           )}
           <details className="small muted">
-            <summary>All fields</summary>
+            <summary>{t('All fields')}</summary>
             <pre className="code-sample">{FIELD_HELP}</pre>
           </details>
         </div>
-        <section className="template-preview" aria-label="Preview">
-          <span className="small muted">Preview</span>
+        <section className="template-preview" aria-label={t('Preview')}>
+          <span className="small muted">{t('Preview')}</span>
           {template ? (
             <>
               <div>
                 <h3>{template.name}</h3>
                 <p className="small muted">{[TYPE_LABEL[template.type], template.description].filter(Boolean).join(' · ')}</p>
-                <p className="small faint">New meetings are called “{defaultTitle(template)}”.</p>
+                <p className="small faint">{t('New meetings are called “{title}”.', { title: defaultTitle(template) })}</p>
               </div>
               {template.columns.length > 0 && (
                 <div className="col" style={{ gap: 4 }}>
-                  <span className="label">Board</span>
+                  <span className="label">{t('Board')}</span>
                   <div className="preview-columns">
                     {template.columns.map((c, i) => (
                       <div key={i} className="preview-column"><strong>{c.title}</strong>{c.description && <span className="small muted">{c.description}</span>}</div>
@@ -104,12 +105,12 @@ export function TemplateEditor(props: { initialYaml: string; editingId?: string;
               )}
               {template.agenda.length > 0 && (
                 <div className="col" style={{ gap: 4 }}>
-                  <span className="label">Agenda · {total} min</span>
+                  <span className="label">{t('Agenda · {n} min', { n: total })}</span>
                   <ol className="preview-agenda">
                     {template.agenda.map((a, i) => (
                       <li key={i}>
                         <span>{a.title}<span className="faint"> · {ACTIVITY_LABEL[a.activity ?? 'topic']}{a.owner ? ` · ${a.owner}` : ''}</span></span>
-                        <span className="faint">{a.durationMin} min</span>
+                        <span className="faint">{t('{n} min', { n: a.durationMin })}</span>
                         {a.notes && <span className="notes small muted">{a.notes}</span>}
                       </li>
                     ))}
@@ -118,35 +119,35 @@ export function TemplateEditor(props: { initialYaml: string; editingId?: string;
               )}
               {template.settings && (
                 <div className="col" style={{ gap: 4 }}>
-                  <span className="label">Settings</span>
+                  <span className="label">{t('Settings')}</span>
                   <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
-                    {template.settings.showAuthors !== undefined && <li>{template.settings.showAuthors ? 'Card authors shown' : 'Cards are anonymous'}</li>}
-                    {template.settings.votesPerUser !== undefined && <li>{template.settings.votesPerUser || 'Unlimited'} votes per person</li>}
-                    {template.settings.votesPerCard !== undefined && <li>{template.settings.votesPerCard || 'Unlimited'} votes per card</li>}
-                    {template.settings.openBoard && <li>Open board: cards appear live with names</li>}
-                    {template.settings.secretVoting !== undefined && <li>{template.settings.secretVoting ? 'Votes hidden until revealed' : 'Votes visible while voting'}</li>}
+                    {template.settings.showAuthors !== undefined && <li>{template.settings.showAuthors ? t('Card authors shown') : t('Cards are anonymous')}</li>}
+                    {template.settings.votesPerUser !== undefined && <li>{template.settings.votesPerUser ? t('{n} votes per person', { n: template.settings.votesPerUser }) : t('Unlimited votes per person')}</li>}
+                    {template.settings.votesPerCard !== undefined && <li>{template.settings.votesPerCard ? t('{n} votes per card', { n: template.settings.votesPerCard }) : t('Unlimited votes per card')}</li>}
+                    {template.settings.openBoard && <li>{t('Open board: cards appear live with names')}</li>}
+                    {template.settings.secretVoting !== undefined && <li>{template.settings.secretVoting ? t('Votes hidden until revealed') : t('Votes visible while voting')}</li>}
                   </ul>
                 </div>
               )}
             </>
           ) : (
-            <p className="small muted">Fix the problems on the left to see the preview.</p>
+            <p className="small muted">{t('Fix the problems on the left to see the preview.')}</p>
           )}
         </section>
       </div>}
       <div className="row wrap">
         {props.editingId && (
           <button type="button" className="danger" onClick={async () => {
-            if (!(await ask('Delete this template from this browser? Meetings made from it are not affected.'))) return;
+            if (!(await ask(t('Delete this template from this browser? Meetings made from it are not affected.')))) return;
             deleteMyTemplate(props.editingId!);
-            toast('Template deleted');
+            toast(t('Template deleted'));
             props.onClose();
-          }}>Delete</button>
+          }}>{t('Delete')}</button>
         )}
-        <button type="button" onClick={() => downloadText(`${slug(template?.name ?? 'template') || 'template'}.yaml`, yaml, 'application/yaml')}>Download .yaml</button>
+        <button type="button" onClick={() => downloadText(`${slug(template?.name ?? 'template') || 'template'}.yaml`, yaml, 'application/yaml')}>{t('Download .yaml')}</button>
         <span className="spacer" />
-        <button type="button" onClick={props.onClose}>Cancel</button>
-        <button type="button" className="primary" disabled={!template} onClick={save}>Save template</button>
+        <button type="button" onClick={props.onClose}>{t('Cancel')}</button>
+        <button type="button" className="primary" disabled={!template} onClick={save}>{t('Save template')}</button>
       </div>
     </Modal>
   );

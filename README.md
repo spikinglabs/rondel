@@ -88,6 +88,7 @@ window.RONDEL_CONFIG = {
   turn: [],
   lab: false,         // true: "Lab" tag in the header and a test notice on the data page
   feedback: null,     // email address or form URL for "Send feedback"; null hides it
+  language: "en",     // interface language for people who have not chosen one (a code from src/i18n/languages.ts, e.g. "de"); omit to follow the browser
   name: "Rondel",     // the name in the header and browser tab
   operator: null      // who runs this site, shown in the footer and on the data page (see DEPLOY.md)
 };
@@ -234,6 +235,12 @@ optional card board, a timed agenda and voting rules. [TEMPLATES.md](TEMPLATES.m
 them, and `npm test` checks that the current code still reads them the same. When a release changes how
 anything is stored, run `node --import tsx scripts/compat-fixture.ts` and commit the new file; never edit an
 old one.
+
+## Languages
+
+The interface is in English and German, chosen under Your preferences → Language (by default the browser's language).
+Adding a language is one folder in `src/i18n/` and one line in `src/i18n/languages.ts`; `npm run i18n -- new`
+creates both. See [src/i18n/README.md](src/i18n/README.md).
 
 ## Licence
 

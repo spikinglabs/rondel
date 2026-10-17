@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { copyText } from './ui';
 import { VERSION, feedbackHref } from '../lib/lab';
+import { t } from '../lib/i18n';
 
 interface State {
   error: Error | null;
@@ -39,24 +40,25 @@ export class ErrorScreen extends Component<{ children: ReactNode }, State> {
   render() {
     if (!this.state.error) return this.props.children;
     const feedback = feedbackHref();
+    const [before, after] = t('Please {link} and paste these details, which contain no meeting content or link:').split('{link}');
     return (
       <div className="page">
         <div className="card stack error-screen" role="alert">
-          <h2>Something went wrong on this page</h2>
+          <h2>{t('Something went wrong on this page')}</h2>
           <p className="muted">
-            Nothing you wrote is lost: your meetings are kept in this browser and, for shared meetings, on the server. Reloading usually fixes it.
+            {t('Nothing you wrote is lost: your meetings are kept in this browser and, for shared meetings, on the server. Reloading usually fixes it.')}
           </p>
           <div className="row wrap">
-            <button className="primary" onClick={() => location.reload()}>Reload</button>
-            <a href="#/">Back to my meetings</a>
+            <button className="primary" onClick={() => location.reload()}>{t('Reload')}</button>
+            <a href="#/">{t('Back to my meetings')}</a>
           </div>
           <p className="small muted">
-            {feedback ? <>Please <a href={feedback} target="_blank" rel="noopener">report it</a> and paste these details, </> : 'If you report it, include these details, '}
-            which contain no meeting content or link:
+            {feedback ? <>{before}<a href={feedback} target="_blank" rel="noopener">{t('report it')}</a>{after}</> : t('If you report it, include these details, which contain no meeting content or link:')}
           </p>
-          <textarea readOnly rows={8} value={this.state.details} aria-label="Error details" onFocus={(e) => e.currentTarget.select()} />
+          <textarea readOnly rows={8} value={this.state.details} aria-label={t('Error details')} onFocus={(e) => e.currentTarget.select()} />
           <div className="row">
-            <button className="sm" onClick={() => copyText(this.state.details, 'Details copied')}>Copy details</button>
+            <button className="sm" onClick={() => copyText(this.state.details, t('Details copied'))}>{t('Copy details')}</button>
+
           </div>
         </div>
       </div>

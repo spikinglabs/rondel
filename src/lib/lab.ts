@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 /** The app's version, from package.json at build time ("dev" when running outside a build, e.g. in tests). */
 export const VERSION: string = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
@@ -5,7 +7,7 @@ export const VERSION: string = typeof __APP_VERSION__ !== 'undefined' ? __APP_VE
 export const isLab = () => !!window.RONDEL_CONFIG?.lab;
 
 /** The header tag: "Lab", or the text RONDEL_CONFIG.lab gives (e.g. "Staging"). */
-export const labLabel = () => (typeof window.RONDEL_CONFIG?.lab === 'string' ? window.RONDEL_CONFIG.lab : 'Lab');
+export const labLabel = () => (typeof window.RONDEL_CONFIG?.lab === 'string' ? window.RONDEL_CONFIG.lab : t('Lab'));
 
 /** Which kind of page is open, without the meeting id or key, so feedback never carries a link. */
 function pageKind() {
@@ -25,7 +27,7 @@ export function feedbackHref(): string | null {
   const to = window.RONDEL_CONFIG?.feedback?.trim();
   if (!to) return null;
   const subject = `Rondel feedback (${VERSION})`;
-  const body = `\n\n\n---\nRondel ${VERSION}, ${pageKind()}, ${navigator.userAgent}\n(Please don't paste meeting links here: they contain the meeting's key.)`;
+  const body = `\n\n\n---\nRondel ${VERSION}, ${pageKind()}, ${navigator.userAgent}\n${t('(Please don\'t paste meeting links here: they contain the meeting\'s key.)')}`;
   if (/^https?:\/\//.test(to)) {
     if (!/\/issues\/new\/?$/.test(to)) return to;
     const url = new URL(to);
