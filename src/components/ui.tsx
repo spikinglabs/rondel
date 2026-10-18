@@ -243,3 +243,21 @@ export function fmtDate(iso: string | null | undefined) {
   return iso ? new Date(iso).toLocaleDateString(locale(),
  { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 }
+
+/** The time on this computer, in the browser's own 12- or 24-hour style, so people can keep an eye on the agenda. */
+export function LocalClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    // Wake just after each minute turns, so the clock never lags the system clock.
+    let id: ReturnType<typeof setTimeout>;
+    const next = () => { id = setTimeout(() => { setNow(new Date()); next(); }, 60_000 - (Date.now() % 60_000) + 50); };
+    next();
+    return () => clearTimeout(id);
+  }, []);
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return (
+    <time className="local-clock" dateTime={now.toISOString()} title={t('Your local time ({zone})', { zone })}>
+      {now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+    </time>
+  );
+}

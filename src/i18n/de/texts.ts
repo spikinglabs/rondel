@@ -991,4 +991,6 @@ export const texts: Record<string, string> = {
   'It compares every file the site sends with your own build and shows the site\'s settings. Each release on GitHub also lists the fingerprints (SHA-256) of its files.': 'Das vergleicht jede Datei, die die Website sendet, mit Ihrem eigenen Build und zeigt die Einstellungen der Website. Jede Version auf GitHub listet außerdem die Fingerabdrücke (SHA-256) ihrer Dateien auf.',
   'This site also tells your browser that the page may connect only to this site\'s own server (a Content-Security-Policy), so the app cannot send anything anywhere else.': 'Diese Website teilt Ihrem Browser außerdem mit, dass sich die Seite nur mit dem eigenen Server dieser Website verbinden darf (eine Content-Security-Policy). Die App kann also nichts anderswohin senden.',
   'A check shows what the site sent at that moment. An organisation that wants to be sure it never sends anything different can run its own copy of Rondel, built from the same source code.': 'Eine Prüfung zeigt, was die Website in diesem Moment gesendet hat. Eine Organisation, die sicher sein will, dass sie nie etwas anderes sendet, kann eine eigene Kopie von Rondel betreiben, gebaut aus demselben Quellcode.',
+  // components/ui
+  'Your local time ({zone})': 'Ihre Ortszeit ({zone})',
 };
