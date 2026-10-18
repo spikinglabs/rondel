@@ -6,7 +6,7 @@ import type { Sync } from '../lib/sync';
 import type { Ops } from '../lib/ops';
 import { actionsCsv, minutesMarkdown } from '../lib/minutes';
 import { downloadText, exportMeeting, slug } from '../lib/files';
-import { Avatar, Modal, PrefsButton, TopBar, toast, toastError, ask, copyText, fmtDate } from '../components/ui';
+import { Avatar, LocalClock, Modal, PrefsButton, TopBar, toast, toastError, ask, copyText, fmtDate } from '../components/ui';
 import { TimerView } from '../components/Timer';
 import { QrCode } from '../components/QrCode';
 import { Board } from '../components/Board';
@@ -159,6 +159,7 @@ export function MeetingPage({ roomId, roomKey, me, onRename }: { roomId: string;
     <>
       <TopBar crumbs={meta.seriesName ? [meta.seriesName] : []} right={
         <span className="row small">
+          <LocalClock />
           <ConnectionBadge sync={state.sync} count={peers.length - 1} />
           <PrefsButton me={me} onChange={onRename} />
         </span>

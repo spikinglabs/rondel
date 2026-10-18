@@ -285,6 +285,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .phases button[aria-current='step'] { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 0 0 1px var(--border); }
 .timer { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); }
 .timer.low { color: var(--warning); background: var(--warning-soft); }
+.local-clock { font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; cursor: default; }
 .timer.over { color: var(--danger); background: var(--danger-soft); }
 
 .agenda-item { display: flex; gap: 8px; padding: 8px 10px; border-radius: 6px; align-items: flex-start; cursor: pointer; }
