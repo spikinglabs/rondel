@@ -78,6 +78,8 @@ try {
   await page.getByRole('button', { name: 'Invite' }).waitFor({ timeout: 15000 });
   ok('Switching the language to English in the preferences reloads the page in English');
 
+  const menu = await page.locator('.site-footer').getByLabel('Language').boundingBox();
+  assert(menu && menu.width < 200, `the footer language menu is ${menu?.width}px wide; it should fit its longest language name`);
   await Promise.all([page.waitForEvent('load'), page.locator('.site-footer').getByLabel('Language').selectOption('de')]);
   await page.getByRole('button', { name: 'Einladen' }).waitFor({ timeout: 15000 });
   await Promise.all([page.waitForEvent('load'), page.locator('.site-footer').getByLabel('Sprache').selectOption('en')]);

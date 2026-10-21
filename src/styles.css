@@ -402,7 +402,7 @@ select.sm-select { width: auto; min-height: 26px; padding: 2px 8px; font-size: 1
 /* ---------- footer */
 .site-footer { text-align: center; padding: 20px 16px 28px; font-size: 12px; color: var(--text-3); }
 .site-footer a { color: var(--text-2); }
-.site-footer .lang-select { font: inherit; color: var(--text-2); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 1px 4px; cursor: pointer; }
+.site-footer .lang-select { width: auto; min-height: 0; font: inherit; color: var(--text-2); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 1px 4px; cursor: pointer; }
 
 /* ---------- how your data is handled */
 .data-page { max-width: 760px; margin: 0 auto; }
